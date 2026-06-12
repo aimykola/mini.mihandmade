@@ -16,7 +16,7 @@ export default function Header() {
     <header className="sticky top-0 z-40 border-b border-black/10 bg-background/90 backdrop-blur">
     <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
     <a href="#top" className="flex items-center gap-2">
-    <Image src="/logo.png" alt="MINIMI Handmade" width={44} height={44} className="h-11 w-11 object-contain mix-blend-multiply" priority />
+    <Image src="/logo.png" alt="MINIMI Handmade" width={44} height={44} className="h-11 w-11 object-contain" priority />
     <span className="text-xl font-extrabold tracking-tight text-brand-dark">MINIMI <span className="font-light text-foreground">handmade</span></span>
     </a>
     <nav className="hidden gap-6 md:flex">
