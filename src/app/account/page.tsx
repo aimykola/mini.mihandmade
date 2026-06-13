@@ -9,6 +9,7 @@ type Profile = {
   full_name: string | null;
   phone: string | null;
   discount: number | null;
+  role: string | null;
 };
 
 type Order = {
@@ -39,13 +40,11 @@ export default function AccountPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [tab, setTab] = useState<Tab>('data');
 
-  // editable fields
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileMsg, setProfileMsg] = useState('');
 
-  // password change
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [savingPassword, setSavingPassword] = useState(false);
@@ -64,7 +63,7 @@ export default function AccountPage() {
       setIsOAuth(!!provider && provider !== 'email');
       const { data: prof } = await supabase
         .from('profiles')
-        .select('full_name, phone, discount')
+        .select('full_name, phone, discount, role')
         .eq('id', user.id)
         .single();
       setProfile(prof);
@@ -98,7 +97,7 @@ export default function AccountPage() {
     if (error) {
       setProfileMsg('Не вдалося зберегти. Спробуйте ще раз.');
     } else {
-      setProfile((p) => ({ ...(p ?? { discount: 0 }), full_name: fullName, phone }));
+      setProfile((p) => ({ ...(p ?? { discount: 0, role: 'user' }), full_name: fullName, phone }));
       setProfileMsg('Дані збережено ✓');
     }
   }
@@ -141,6 +140,8 @@ export default function AccountPage() {
     );
   }
 
+  const isAdmin = profile?.role === 'admin';
+
   return (
     <main className="min-h-screen bg-[#fdf8f3] px-4 py-12">
       <div className="mx-auto max-w-5xl">
@@ -151,7 +152,6 @@ export default function AccountPage() {
         <button onClick={handleLogout} className="mx-auto mb-8 block text-sm font-medium text-[#5a4636] underline-offset-4 hover:underline">Вийти з облікового запису</button>
 
         <div className="grid gap-6 md:grid-cols-[240px_1fr]">
-          {/* Sidebar */}
           <nav className="flex flex-col gap-1">
             {TABS.map((t) => (
               <button
@@ -162,10 +162,12 @@ export default function AccountPage() {
                 {t.label}
               </button>
             ))}
+            {isAdmin && (
+              <Link href="/admin" className="rounded-xl border border-[#b5552e] px-4 py-3 text-left text-sm font-semibold text-[#b5552e] hover:bg-[#fbeee2]">Адмін-панель</Link>
+            )}
             <button onClick={handleLogout} className="rounded-xl px-4 py-3 text-left text-sm font-semibold text-[#5a4636] hover:bg-white/60">Вихід</button>
           </nav>
 
-          {/* Content */}
           <section className="rounded-2xl border border-[#f0e6da] bg-white p-6 shadow-sm">
             {tab === 'data' && (
               <div>
