@@ -11,12 +11,17 @@ export default function RegisterPage() {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [agree, setAgree] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
 
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
+    if (!agree) {
+      setError('Потрібно погодитися з умовами використання сайту');
+      return;
+    }
     setLoading(true);
     setError('');
     const { error } = await supabase.auth.signUp({
@@ -63,8 +68,12 @@ export default function RegisterPage() {
           <input type="tel" placeholder="Телефон" value={phone} onChange={(e) => setPhone(e.target.value)} className="w-full rounded-xl border border-[#e3d6c7] px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#e8a87c]" />
           <input type="email" required placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded-xl border border-[#e3d6c7] px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#e8a87c]" />
           <input type="password" required placeholder="Пароль (мін. 6 символів)" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full rounded-xl border border-[#e3d6c7] px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#e8a87c]" />
+          <label className="flex items-start gap-2 text-sm text-[#5a4636] cursor-pointer select-none">
+            <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} className="mt-0.5 h-4 w-4 shrink-0 accent-[#b5552e]" />
+            <span>Я згоден з <Link href="/terms" className="text-[#b5552e] font-medium hover:underline">умовами використання сайту</Link></span>
+          </label>
           {error && <p className="text-sm text-red-500">{error}</p>}
-          <button type="submit" disabled={loading} className="w-full rounded-xl bg-[#b5552e] py-2.5 text-sm font-semibold text-white hover:bg-[#9d4726] transition disabled:opacity-60">{loading ? 'Зачекайте...' : 'Зареєструватися'}</button>
+          <button type="submit" disabled={loading || !agree} className="w-full rounded-xl bg-[#b5552e] py-2.5 text-sm font-semibold text-white hover:bg-[#9d4726] transition disabled:opacity-60 disabled:cursor-not-allowed">{loading ? 'Зачекайте...' : 'Зареєструватися'}</button>
         </form>
         <p className="mt-6 text-center text-sm text-[#5a4636]">Вже є акаунт? <Link href="/login" className="text-[#b5552e] font-medium hover:underline">Увійти</Link></p>
       </div>
