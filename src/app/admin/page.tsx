@@ -65,6 +65,11 @@ export default function AdminPage() {
     setOrders((data as Record<string, unknown>[]) ?? []);
   }, []);
 
+  const updateOrderStatus = useCallback(async (id: string, status: string) => {
+    await supabase.from('orders').update({ status }).eq('id', id);
+    setOrders((prev) => prev.map((o) => (String(o.id) === id ? { ...o, status } : o)));
+  }, []);
+
   useEffect(() => {
     async function init() {
       const { data: { user } } = await supabase.auth.getUser();
@@ -169,6 +174,7 @@ export default function AdminPage() {
     );
   }
 
+  const newOrdersCount = orders.filter((o) => String(o.status ?? 'new') === 'new').length;
   return (
     <main className="min-h-screen bg-[#fdf8f3] px-4 py-12">
       <div className="mx-auto max-w-5xl">
@@ -181,7 +187,7 @@ export default function AdminPage() {
         <div className="mb-6 flex justify-center gap-2">
           <button onClick={() => setTab('products')} className={`rounded-xl px-5 py-2.5 text-sm font-semibold transition ${tab === 'products' ? 'bg-[#b5552e] text-white' : 'bg-white border border-[#f0e6da] text-[#5a4636]'}`}>Товари</button>
           <button onClick={() => setTab('users')} className={`rounded-xl px-5 py-2.5 text-sm font-semibold transition ${tab === 'users' ? 'bg-[#b5552e] text-white' : 'bg-white border border-[#f0e6da] text-[#5a4636]'}`}>Користувачі</button>
-          <button onClick={() => setTab('orders')} className={`rounded-xl px-5 py-2.5 text-sm font-semibold transition ${tab === 'orders' ? 'bg-[#b5552e] text-white' : 'bg-white border border-[#f0e6da] text-[#5a4636]'}`}>Замовлення</button>
+          <button onClick={() => setTab('orders')} className={`rounded-xl px-5 py-2.5 text-sm font-semibold transition ${tab === 'orders' ? 'bg-[#b5552e] text-white' : 'bg-white border border-[#f0e6da] text-[#5a4636]'}`}>Замовлення{newOrdersCount > 0 && (<span className="ml-2 inline-flex items-center justify-center rounded-full bg-red-500 px-2 py-0.5 text-xs font-bold text-white">{newOrdersCount}</span>)}</button>
         </div>
 
         {msg && <p className="mb-4 text-center text-sm text-[#5a4636]">{msg}</p>}
@@ -283,6 +289,7 @@ export default function AdminPage() {
                     <th className="p-3">Оплата</th>
                     <th className="p-3">Сума</th>
                     <th className="p-3">Статус</th>
+                    <th className="p-3">Дія</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -302,6 +309,7 @@ export default function AdminPage() {
                       <td className="p-3 text-[#5a4636]">{o.payment_method === 'card' ? 'Картка' : 'При отриманні'}</td>
                       <td className="p-3 whitespace-nowrap font-semibold text-[#5a4636]">{String(o.total ?? 0)} грн</td>
                       <td className="p-3 text-[#5a4636]">{String(o.status ?? 'new')}</td>
+                      <td className="p-3">{String(o.status ?? 'new') === 'new' ? (<button onClick={() => updateOrderStatus(String(o.id), 'done')} className="rounded-lg bg-[#b5552e] px-3 py-1 text-xs font-semibold text-white hover:bg-[#9d4726] transition">Опрацьовано</button>) : (<span className="text-xs text-gray-400">—</span>)}</td>
                     </tr>
                   ))}
                 </tbody>
