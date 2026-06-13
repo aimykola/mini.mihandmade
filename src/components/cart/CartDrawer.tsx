@@ -24,6 +24,10 @@ export default function CartDrawer() {
         const orderItems = items.map((i) => ({ title: i.product.name, qty: i.qty, price: i.product.price }))
         const { error: insertError } = await supabase.from('orders').insert({ user_id: user.id, items: orderItems, total, status: 'new' })
         if (insertError) throw insertError
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .upsert({ id: user.id, full_name: name, phone }, { onConflict: 'id' })
+        if (profileError) throw profileError
         clear()
       }
       setSent(true)
