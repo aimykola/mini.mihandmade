@@ -16,26 +16,48 @@ async function npCall(modelName: string, calledMethod: string, methodProperties:
   return { ok: true, data: json };
 }
 
+// Static list of Ukrainian regions (oblasts) for the cascade selector.
+const AREAS = [
+  'Вінницька', 'Волинська', 'Дніпропетровська', 'Донецька', 'Житомирська',
+  'Закарпатська', 'Запорізька', 'Івано-Франківська', 'Київська', 'м. Київ',
+  'Кіровоградська', 'Луганська', 'Львівська', 'Миколаївська', 'Одеська',
+  'Полтавська', 'Рівненська', 'Сумська', 'Тернопільська', 'Харківська',
+  'Херсонська', 'Хмельницька', 'Черкаська', 'Чернівецька', 'Чернігівська',
+];
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const action = searchParams.get('action');
 
+  if (action === 'areas') {
+    return NextResponse.json({ items: AREAS.map((name) => ({ name })) });
+  }
+
   if (action === 'cities') {
     const q = (searchParams.get('q') || '').trim();
+    const area = (searchParams.get('area') || '').trim();
     if (q.length < 2) return NextResponse.json({ items: [] });
     const result = await npCall('Address', 'searchSettlements', {
       CityName: q,
-      Limit: 20,
+      Limit: 30,
       Page: 1,
     });
     if (!result.ok) return NextResponse.json({ error: result.error }, { status: 500 });
     const addresses = result.data?.data?.[0]?.Addresses ?? [];
-    const items = addresses.map((a: { Present: string; DeliveryCity: string; MainDescription: string; Area: string }) => ({
+    let items = addresses.map((a: { Present: string; DeliveryCity: string; MainDescription: string; Area: string }) => ({
       ref: a.DeliveryCity,
       name: a.MainDescription,
       present: a.Present,
       area: a.Area,
     }));
+    // Optional filter by chosen region
+    if (area) {
+      const needle = area.replace(/\s+/g, '').toLowerCase();
+      items = items.filter((i: { area: string; present: string }) =>
+        (i.area || '').replace(/\s+/g, '').toLowerCase().includes(needle) ||
+        (i.present || '').replace(/\s+/g, '').toLowerCase().includes(needle)
+      );
+    }
     return NextResponse.json({ items });
   }
 
