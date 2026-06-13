@@ -15,6 +15,72 @@ function getAdminClient() {
 
 type OrderItem = { id: string; name: string; price: number; qty: number };
 
+// Send an email notification to the shop admin about a new order.
+// Uses Resend's HTTP API directly (no extra dependency). Failure to
+// send the email must NEVER break order creation — it is best-effort.
+async function notifyAdmin(order: {
+  orderId: string;
+  customerName: string;
+  customerPhone: string;
+  total: number;
+  items: OrderItem[];
+  npArea: string;
+  npCity: string;
+  npWarehouse: string;
+  paymentMethod: string;
+  comment: string;
+}) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return; // not configured yet — skip silently
+  const from = process.env.ORDER_EMAIL_FROM || 'MINIMI handmade <onboarding@resend.dev>';
+  const to = process.env.ORDER_EMAIL_TO || 'aimykola15@gmail.com';
+
+  const payment = order.paymentMethod === 'card' ? 'Картка Visa/MasterCard' : 'Оплата при отриманні';
+  const itemsRows = order.items
+    .map(
+      (it) =>
+        `<tr><td style="padding:6px 10px;border-bottom:1px solid #f0e6da">${it.name}</td><td style="padding:6px 10px;border-bottom:1px solid #f0e6da;text-align:center">${it.qty}</td><td style="padding:6px 10px;border-bottom:1px solid #f0e6da;text-align:right">${it.price} грн</td></tr>`
+    )
+    .join('');
+
+  const html = `
+    <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#5a4636">
+      <h2 style="color:#b5552e">🛍️ Нове замовлення №${order.orderId.slice(0, 8)}</h2>
+      <p><b>Покупець:</b> ${order.customerName}<br/>
+         <b>Телефон:</b> ${order.customerPhone}</p>
+      <table style="border-collapse:collapse;width:100%;margin:12px 0">
+        <thead><tr style="background:#fbeee2">
+          <th style="padding:6px 10px;text-align:left">Товар</th>
+          <th style="padding:6px 10px">К-сть</th>
+          <th style="padding:6px 10px;text-align:right">Ціна</th>
+        </tr></thead>
+        <tbody>${itemsRows}</tbody>
+      </table>
+      <p style="font-size:18px"><b>Разом: ${order.total} грн</b></p>
+      <p><b>Доставка:</b> Нова Пошта, ${order.npArea ? order.npArea + ', ' : ''}${order.npCity}, ${order.npWarehouse}<br/>
+         <b>Оплата:</b> ${payment}</p>
+      ${order.comment ? `<p><b>Коментар:</b> ${order.comment}</p>` : ''}
+    </div>`;
+
+  try {
+    await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        from,
+        to,
+        subject: `Нове замовлення на ${order.total} грн — ${order.customerName}`,
+        html,
+      }),
+    });
+  } catch {
+    // best-effort — ignore email errors
+  }
+}
+
 export async function POST(req: NextRequest) {
   let body: Record<string, unknown>;
   try {
@@ -90,6 +156,20 @@ export async function POST(req: NextRequest) {
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  // Best-effort admin email notification (does not block the response).
+  await notifyAdmin({
+    orderId: String(data?.id ?? ''),
+    customerName,
+    customerPhone,
+    total,
+    items,
+    npArea,
+    npCity,
+    npWarehouse,
+    paymentMethod,
+    comment,
+  });
 
   return NextResponse.json({ ok: true, orderId: data?.id });
 }
