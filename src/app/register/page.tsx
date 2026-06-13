@@ -54,6 +54,7 @@ export default function RegisterPage() {
   return (
     <main className="min-h-screen flex items-center justify-center bg-[#fdf8f3] px-4 py-16">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border border-[#f0e6da] p-8">
+        <Link href="/" className="inline-flex items-center gap-1 mb-4 text-sm font-medium text-[#b5552e] hover:underline">← На головну</Link>
         <h1 className="text-2xl font-bold text-[#b5552e] mb-6 text-center">Реєстрація</h1>
         <button onClick={handleGoogle} className="w-full mb-4 flex items-center justify-center gap-2 rounded-xl border border-[#e3d6c7] py-2.5 text-sm font-medium text-[#5a4636] hover:bg-[#faf4ec] transition">Зареєструватися через Google</button>
         <div className="text-center text-xs text-gray-400 mb-4">або</div>
