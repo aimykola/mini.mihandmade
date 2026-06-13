@@ -31,9 +31,10 @@ export default function AdminPage() {
   const router = useRouter();
   const [checking, setChecking] = useState(true);
   const [allowed, setAllowed] = useState(false);
-  const [tab, setTab] = useState<'products' | 'users'>('products');
+  const [tab, setTab] = useState<'products' | 'users' | 'orders'>('products');
 
   const [products, setProducts] = useState<Product[]>([]);
+  const [orders, setOrders] = useState<Record<string, unknown>[]>([]);
   const [users, setUsers] = useState<UserRow[]>([]);
   const [form, setForm] = useState<typeof empty>(empty);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -56,6 +57,14 @@ export default function AdminPage() {
     setUsers((data as UserRow[]) ?? []);
   }, []);
 
+  const loadOrders = useCallback(async () => {
+    const { data } = await supabase
+      .from('orders')
+      .select('*')
+      .order('created_at', { ascending: false });
+    setOrders((data as Record<string, unknown>[]) ?? []);
+  }, []);
+
   useEffect(() => {
     async function init() {
       const { data: { user } } = await supabase.auth.getUser();
@@ -66,9 +75,10 @@ export default function AdminPage() {
       setChecking(false);
       await loadProducts();
       await loadUsers();
+      await loadOrders();
     }
     init();
-  }, [router, loadProducts, loadUsers]);
+  }, [router, loadProducts, loadUsers, loadOrders]);
 
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -171,6 +181,7 @@ export default function AdminPage() {
         <div className="mb-6 flex justify-center gap-2">
           <button onClick={() => setTab('products')} className={`rounded-xl px-5 py-2.5 text-sm font-semibold transition ${tab === 'products' ? 'bg-[#b5552e] text-white' : 'bg-white border border-[#f0e6da] text-[#5a4636]'}`}>Товари</button>
           <button onClick={() => setTab('users')} className={`rounded-xl px-5 py-2.5 text-sm font-semibold transition ${tab === 'users' ? 'bg-[#b5552e] text-white' : 'bg-white border border-[#f0e6da] text-[#5a4636]'}`}>Користувачі</button>
+          <button onClick={() => setTab('orders')} className={`rounded-xl px-5 py-2.5 text-sm font-semibold transition ${tab === 'orders' ? 'bg-[#b5552e] text-white' : 'bg-white border border-[#f0e6da] text-[#5a4636]'}`}>Замовлення</button>
         </div>
 
         {msg && <p className="mb-4 text-center text-sm text-[#5a4636]">{msg}</p>}
@@ -256,6 +267,46 @@ export default function AdminPage() {
               </table>
             </div>
             <p className="mt-4 text-xs text-gray-400">Знижка зберігається при втраті фокуса поля.</p>
+          </div>
+        )}
+        {tab === 'orders' && (
+          <div className="overflow-x-auto rounded-2xl border border-[#f0e6da] bg-white">
+            {orders.length === 0 ? (
+              <p className="p-6 text-center text-sm text-[#5a4636]">Замовлень поки немає</p>
+            ) : (
+              <table className="w-full text-left text-sm">
+                <thead className="border-b border-[#f0e6da] text-[#b5552e]">
+                  <tr>
+                    <th className="p-3">Дата</th>
+                    <th className="p-3">Покупець</th>
+                    <th className="p-3">Доставка</th>
+                    <th className="p-3">Оплата</th>
+                    <th className="p-3">Сума</th>
+                    <th className="p-3">Статус</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {orders.map((o) => (
+                    <tr key={String(o.id)} className="border-b border-[#f0e6da] align-top">
+                      <td className="p-3 whitespace-nowrap text-[#5a4636]">{o.created_at ? new Date(String(o.created_at)).toLocaleString('uk-UA', { dateStyle: 'short', timeStyle: 'short' }) : '—'}</td>
+                      <td className="p-3">
+                        <div className="font-semibold text-[#5a4636]">{String(o.customer_name ?? '—')}</div>
+                        <div className="text-[#5a4636]/70">{String(o.customer_phone ?? '')}</div>
+                        {o.comment ? <div className="mt-1 text-xs text-[#5a4636]/60">💬 {String(o.comment)}</div> : null}
+                        {!o.user_id ? <span className="mt-1 inline-block rounded bg-[#fbeee2] px-1.5 py-0.5 text-xs text-[#9c4727]">Гість</span> : null}
+                      </td>
+                      <td className="p-3 text-[#5a4636]">
+                        <div>{String(o.np_city ?? '—')}</div>
+                        <div className="text-xs text-[#5a4636]/70">{String(o.np_warehouse ?? '')}</div>
+                      </td>
+                      <td className="p-3 text-[#5a4636]">{o.payment_method === 'card' ? 'Картка' : 'При отриманні'}</td>
+                      <td className="p-3 whitespace-nowrap font-semibold text-[#5a4636]">{String(o.total ?? 0)} грн</td>
+                      <td className="p-3 text-[#5a4636]">{String(o.status ?? 'new')}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         )}
       </div>
