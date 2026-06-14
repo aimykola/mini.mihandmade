@@ -193,13 +193,6 @@ export default function AccountPage() {
   async function handleChangePassword(e: React.FormEvent) {
     e.preventDefault();
     setPasswordMsg('');
-    if (isOAuth) {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: typeof window !== 'undefined' ? window.location.origin + '/login' : undefined,
-      });
-      setPasswordMsg(error ? 'Помилка. Спробуйте ще раз.' : 'Лист для встановлення пароля надіслано на ' + email);
-      return;
-    }
     if (newPassword.length < 6) {
       setPasswordMsg('Пароль має містити щонайменше 6 символів.');
       return;
@@ -337,15 +330,9 @@ export default function AccountPage() {
 
                 <div className="mt-10 border-t border-[#f0e6da] pt-6">
                   <h3 className="mb-2 text-lg font-bold text-[#b5552e]">Зміна пароля</h3>
-                  {isOAuth ? (
-                    <div>
-                      <p className="mb-3 text-sm text-[#5a4636]">Ваш акаунт створено через Google. Щоб встановити пароль, ми надішлемо лист із посиланням.</p>
-                      <form onSubmit={handleChangePassword}>
-                        <button type="submit" className="rounded-xl border border-[#b5552e] px-5 py-2.5 text-sm font-semibold text-[#b5552e] transition hover:bg-[#fbeee2]">Надіслати лист для встановлення пароля</button>
-                        {passwordMsg && <p className="mt-3 text-sm text-[#5a4636]">{passwordMsg}</p>}
-                      </form>
-                    </div>
-                  ) : (
+                  {isOAuth && (
+                    <p className="mb-3 text-sm text-[#5a4636]">Ваш акаунт створено через Google. Встановіть пароль, щоб також мати змогу входити за e‑mail і паролем.</p>
+                  )}
                     <form onSubmit={handleChangePassword} className="grid max-w-md gap-4">
                       <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Новий пароль" className={inputCls} />
                       <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Підтвердіть пароль" className={inputCls} />
@@ -354,7 +341,6 @@ export default function AccountPage() {
                         {passwordMsg && <span className="text-sm text-[#5a4636]">{passwordMsg}</span>}
                       </div>
                     </form>
-                  )}
                 </div>
               </div>
             )}
