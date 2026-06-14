@@ -18,6 +18,13 @@ export default function CartDrawer() {
   const [payment, setPayment] = useState<'cod' | 'card'>('cod')
   const [wantRegister, setWantRegister] = useState(false)
 
+  // Оплата при отриманні доступна лише коли ВСІ товари в наявності.
+  // Якщо хоч один товар під замовлення — лише повна передплата карткою.
+  const allInStock = items.every((i) => i.product.in_stock !== false)
+  useEffect(() => {
+    if (!allInStock) setPayment('card')
+  }, [allInStock])
+
   // Nova Poshta cascade
   const [areas, setAreas] = useState<Area[]>([])
   const [area, setArea] = useState('')
@@ -239,10 +246,13 @@ export default function CartDrawer() {
                 <section>
                   <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-foreground/70">Оплата</h3>
                   <div className="space-y-2">
-                    <label className="flex items-center gap-2 text-sm">
-                      <input type="radio" name="pay" checked={payment === 'cod'} onChange={() => setPayment('cod')} className="accent-brand" />
+                    <label className={`flex items-center gap-2 text-sm ${!allInStock ? 'opacity-40' : ''}`}>
+                      <input type="radio" name="pay" checked={payment === 'cod'} onChange={() => setPayment('cod')} disabled={!allInStock} className="accent-brand" />
                       Оплата при отриманні
                     </label>
+                    {!allInStock && (
+                      <p className="text-xs text-brand">У кошику є товари під замовлення — доступна лише повна передплата карткою.</p>
+                    )}
                     <label className="flex items-center gap-2 text-sm">
                       <input type="radio" name="pay" checked={payment === 'card'} onChange={() => setPayment('card')} className="accent-brand" />
                       Оплатити карткою Visa/MasterCard
