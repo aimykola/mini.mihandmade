@@ -177,6 +177,15 @@ export default function AdminPage() {
     await loadProducts();
   }
 
+  async function deleteProduct(p: Product) {
+    if (!confirm(`\u0412\u0438\u0434\u0430\u043b\u0438\u0442\u0438 \u0442\u043e\u0432\u0430\u0440 \u00ab${p.name}\u00bb?`)) return;
+    setMsg('');
+    const { error } = await supabase.from('products').delete().eq('id', p.id);
+    if (error) { setMsg('\u041f\u043e\u043c\u0438\u043b\u043a\u0430: ' + error.message); return; }
+    setMsg('\u0422\u043e\u0432\u0430\u0440 \u0432\u0438\u0434\u0430\u043b\u0435\u043d\u043e \u2713');
+    await loadProducts();
+  }
+
   async function saveDiscount(u: UserRow, value: number) {
     await supabase.from('profiles').update({ discount: value }).eq('id', u.id);
     await loadUsers();
@@ -269,6 +278,7 @@ export default function AdminPage() {
                     <button onClick={() => startEdit(p)} className="text-sm text-[#b5552e] hover:underline">Редагувати</button>
                     <button onClick={() => toggleActive(p)} className="text-sm text-[#5a4636] hover:underline">{p.active ? 'Приховати' : 'Показати'}</button>
                   <button onClick={() => toggleInStock(p)} className="text-sm text-[#b5552e] hover:underline">{p.in_stock ? '→ Під замовлення' : '→ В наявності'}</button>
+                  <button onClick={() => deleteProduct(p)} className="text-sm text-red-600 hover:underline">Видалити</button>
                   </li>
                 ))}
               </ul>
