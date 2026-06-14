@@ -14,6 +14,7 @@ type Product = {
   category: string;
   image: string | null;
   active: boolean;
+  in_stock: boolean;
 };
 
 type UserRow = {
@@ -44,7 +45,7 @@ export default function AdminPage() {
   const loadProducts = useCallback(async () => {
     const { data } = await supabase
       .from('products')
-      .select('id, slug, name, description, price, category, image, active')
+      .select('id, slug, name, description, price, category, image, active, in_stock')
       .order('created_at', { ascending: true });
     setProducts((data as Product[]) ?? []);
   }, []);
@@ -140,6 +141,11 @@ export default function AdminPage() {
     await loadProducts();
   }
 
+  async function toggleInStock(p: Product) {
+    await supabase.from('products').update({ in_stock: !p.in_stock }).eq('id', p.id);
+    await loadProducts();
+  }
+
   async function saveDiscount(u: UserRow, value: number) {
     await supabase.from('profiles').update({ discount: value }).eq('id', u.id);
     await loadUsers();
@@ -225,11 +231,12 @@ export default function AdminPage() {
                   <li key={p.id} className="flex items-center gap-4 py-3">
                     {p.image ? <img src={p.image} alt="" className="h-12 w-12 rounded-lg object-cover" /> : <div className="h-12 w-12 rounded-lg bg-[#fbeee2]" />}
                     <div className="flex-1">
-                      <p className="font-semibold text-[#5a4636]">{p.name} {!p.active && <span className="text-xs text-gray-400">(приховано)</span>}</p>
+                      <p className="font-semibold text-[#5a4636]">{p.name} {!p.active && <span className="text-xs text-gray-400">(приховано)</span>} <span className={`text-xs ${p.in_stock ? 'text-green-700' : 'text-[#b5552e]'}`}>{p.in_stock ? '• в наявності' : '• під замовлення'}</span></p>
                       <p className="text-sm text-gray-400">{p.price} грн · {p.category}</p>
                     </div>
                     <button onClick={() => startEdit(p)} className="text-sm text-[#b5552e] hover:underline">Редагувати</button>
                     <button onClick={() => toggleActive(p)} className="text-sm text-[#5a4636] hover:underline">{p.active ? 'Приховати' : 'Показати'}</button>
+                  <button onClick={() => toggleInStock(p)} className="text-sm text-[#b5552e] hover:underline">{p.in_stock ? '→ Під замовлення' : '→ В наявності'}</button>
                   </li>
                 ))}
               </ul>
