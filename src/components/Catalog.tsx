@@ -60,6 +60,7 @@ export default function Catalog() {
               </div>
               <div className="flex flex-1 flex-col p-4">
                 <h3 className="text-lg font-bold">{p.name}</h3>
+                <span className={`mt-1 inline-flex w-fit rounded-full px-2 py-0.5 text-xs font-medium ${p.in_stock !== false ? 'bg-[#fbeee2] text-[#b5552e]' : 'bg-[#f0e6da] text-[#9c8a78]'}`}>{p.in_stock !== false ? 'В наявності' : 'Під замовлення'}</span>
                 <p className="mt-1 flex-1 text-sm text-foreground/70">{p.description}</p>
                 <div className="mt-4 flex items-center justify-between">
                   <span className="text-xl font-extrabold text-brand-dark">{p.price} грн</span>
