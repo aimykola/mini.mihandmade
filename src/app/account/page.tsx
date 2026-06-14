@@ -37,6 +37,15 @@ const TABS: { key: Tab; label: string }[] = [
   { key: 'reviews', label: 'Історія відгуків' },
 ];
 
+const STATUS_MAP: Record<string, { label: string; cls: string }> = {
+  new: { label: 'В обробці', cls: 'bg-[#f0e6da] text-[#9c8a78]' },
+  accepted: { label: 'Прийнятий менеджером', cls: 'bg-[#e0ecf5] text-[#3b6b96]' },
+  preparing: { label: 'Готується до відправки', cls: 'bg-[#fbeee2] text-[#b5552e]' },
+  shipped: { label: 'Відправлено', cls: 'bg-[#e8a87c]/30 text-[#9d4726]' },
+  delivered: { label: 'Отримано покупцем', cls: 'bg-green-100 text-green-700' },
+  done: { label: 'Отримано покупцем', cls: 'bg-green-100 text-green-700' },
+};
+
 export default function AccountPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -361,7 +370,7 @@ export default function AccountPage() {
                       <li key={o.id} className="rounded-xl border border-[#f0e6da] p-4">
                         <div className="mb-2 flex items-center justify-between">
                           <span className="text-xs text-gray-400">{new Date(o.created_at).toLocaleDateString('uk-UA')}</span>
-                          <span className="rounded-full bg-[#fbeee2] px-3 py-1 text-xs font-semibold text-[#b5552e]">{o.status}</span>
+                          <span className={`rounded-full px-3 py-1 text-xs font-semibold ${(STATUS_MAP[o.status] ?? STATUS_MAP.new).cls}`}>{(STATUS_MAP[o.status] ?? STATUS_MAP.new).label}</span>
                         </div>
                         <ul className="mb-2 space-y-1 text-sm text-[#5a4636]">
                           {o.items?.map((it, i) => (
