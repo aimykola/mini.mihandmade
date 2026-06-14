@@ -1,11 +1,12 @@
 export type Product = {
   id: string
-    name: string
-      description: string
-        price: number
-          category: 'pled' | 'cardigan'
-            image: string
-            }
+  name: string
+  description: string
+  price: number
+  category: 'pled' | 'cardigan'
+  image: string
+  in_stock?: boolean
+}
 
             export const products: Product[] = [
               {
@@ -15,6 +16,7 @@ export type Product = {
                               price: 1450,
                                   category: 'pled',
                                       image: '/products/pled-1.jpg',
+    in_stock: true,
                                         },
                                           {
                                               id: 'pled-terracotta',
@@ -23,6 +25,7 @@ export type Product = {
                                                           price: 1650,
                                                               category: 'pled',
                                                                   image: '/products/pled-2.jpg',
+    in_stock: true,
                                                                     },
                                                                       {
                                                                           id: 'pled-mini',
@@ -31,6 +34,7 @@ export type Product = {
                                                                                       price: 950,
                                                                                           category: 'pled',
                                                                                               image: '/products/pled-3.jpg',
+    in_stock: true,
                                                                                                 },
                                                                                                   {
                                                                                                       id: 'cardigan-orange',
@@ -39,6 +43,7 @@ export type Product = {
                                                                                                                   price: 2100,
                                                                                                                       category: 'cardigan',
                                                                                                                           image: '/products/cardigan-1.jpg',
+    in_stock: true,
                                                                                                                             },
                                                                                                                               {
                                                                                                                                   id: 'cardigan-beige',
@@ -47,6 +52,7 @@ export type Product = {
                                                                                                                                               price: 2300,
                                                                                                                                                   category: 'cardigan',
                                                                                                                                                       image: '/products/cardigan-2.jpg',
+    in_stock: true,
                                                                                                                                                         },
                                                                                                                                                           {
                                                                                                                                                               id: 'cardigan-pink',
@@ -55,6 +61,7 @@ export type Product = {
                                                                                                                                                                           price: 2200,
                                                                                                                                                                               category: 'cardigan',
                                                                                                                                                                                   image: '/products/cardigan-3.jpg',
+    in_stock: true,
                                                                                                                                                                                     },
                                                                                                                                                                                     ]
                                                                                                                                                                                     
