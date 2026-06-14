@@ -28,6 +28,23 @@ type UserRow = {
 
 const empty = { name: '', description: '', price: 0, category: 'pled', slug: '', image: '' };
 
+const STATUS_MAP: Record<string, { label: string; cls: string }> = {
+  new: { label: 'В обробці', cls: 'bg-[#f0e6da] text-[#9c8a78]' },
+  accepted: { label: 'Прийнятий менеджером', cls: 'bg-[#e0ecf5] text-[#3b6b96]' },
+  preparing: { label: 'Готується до відправки', cls: 'bg-[#fbeee2] text-[#b5552e]' },
+  shipped: { label: 'Відправлено', cls: 'bg-[#e8a87c]/30 text-[#9d4726]' },
+  delivered: { label: 'Отримано покупцем', cls: 'bg-green-100 text-green-700' },
+  done: { label: 'Отримано покупцем', cls: 'bg-green-100 text-green-700' },
+};
+
+const STATUS_FLOW: { value: string; label: string }[] = [
+  { value: 'new', label: 'В обробці' },
+  { value: 'accepted', label: 'Прийнятий менеджером' },
+  { value: 'preparing', label: 'Готується до відправки' },
+  { value: 'shipped', label: 'Відправлено' },
+  { value: 'delivered', label: 'Отримано покупцем' },
+];
+
 export default function AdminPage() {
   const router = useRouter();
   const [checking, setChecking] = useState(true);
@@ -315,8 +332,8 @@ export default function AdminPage() {
                       </td>
                       <td className="p-3 text-[#5a4636]">{o.payment_method === 'card' ? 'Картка' : 'При отриманні'}</td>
                       <td className="p-3 whitespace-nowrap font-semibold text-[#5a4636]">{String(o.total ?? 0)} грн</td>
-                      <td className="p-3 text-[#5a4636]">{String(o.status ?? 'new')}</td>
-                      <td className="p-3">{String(o.status ?? 'new') === 'new' ? (<button onClick={() => updateOrderStatus(String(o.id), 'done')} className="rounded-lg bg-[#b5552e] px-3 py-1 text-xs font-semibold text-white hover:bg-[#9d4726] transition">Опрацьовано</button>) : (<span className="text-xs text-gray-400">—</span>)}</td>
+                      <td className="p-3"><span className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${(STATUS_MAP[String(o.status ?? 'new')] ?? STATUS_MAP.new).cls}`}>{(STATUS_MAP[String(o.status ?? 'new')] ?? STATUS_MAP.new).label}</span></td>
+                      <td className="p-3"><select value={String(o.status ?? 'new')} onChange={(e) => updateOrderStatus(String(o.id), e.target.value)} className="rounded-lg border border-[#e3d6c7] bg-white px-2 py-1 text-xs font-semibold text-[#5a4636] focus:border-[#e8a87c] focus:outline-none">{STATUS_FLOW.map((s) => (<option key={s.value} value={s.value}>{s.label}</option>))}</select></td>
                     </tr>
                   ))}
                 </tbody>
