@@ -13,6 +13,7 @@ type DbProduct = {
   price: number
   category: string
   image: string | null
+  in_stock: boolean | null
 }
 
 export default function Catalog() {
@@ -24,7 +25,7 @@ export default function Catalog() {
     async function load() {
       const { data, error } = await supabase
         .from('products')
-        .select('slug, name, description, price, category, image')
+        .select('slug, name, description, price, category, image, in_stock')
         .eq('active', true)
         .order('created_at', { ascending: true })
       if (!error && data && data.length > 0) {
@@ -35,6 +36,7 @@ export default function Catalog() {
           price: p.price,
           category: (p.category === 'cardigan' ? 'cardigan' : 'pled'),
           image: p.image ?? '/products/pled-1.jpg',
+        in_stock: p.in_stock ?? true,
         }))
         setProducts(mapped)
       }
