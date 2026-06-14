@@ -57,8 +57,6 @@ export default function TermsPage() {
             <h2 className="text-xl font-semibold text-[#473529] mb-3">9. Контакти</h2>
             <p>З будь-яких питань ви можете звʼязатися з нами в Instagram: <a href="https://instagram.com/mini.mihandmade" target="_blank" rel="noopener noreferrer" className="text-[#b5552e] font-medium hover:underline">@mini.mihandmade</a>.</p>
           </section>
-
-          <p className="text-sm text-[#9c8a78] pt-4 border-t border-[#f0e6da]">Це базовий шаблон умов використання. Будь ласка, відредагуйте його відповідно до ваших реальних умов роботи та чинного законодавства.</p>
         </div>
       </div>
     </main>
