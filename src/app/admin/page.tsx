@@ -49,7 +49,7 @@ export default function AdminPage() {
   const router = useRouter();
   const [checking, setChecking] = useState(true);
   const [allowed, setAllowed] = useState(false);
-  const [tab, setTab] = useState<'products' | 'users' | 'orders'>('products');
+  const [tab, setTab] = useState<'products' | 'users' | 'orders' | 'contacts'>('products');
 
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Record<string, unknown>[]>([]);
@@ -58,6 +58,7 @@ export default function AdminPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [msg, setMsg] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [contacts, setContacts] = useState({ contacts_heading: '', contacts_text: '', instagram_url: '', instagram_label: '', phone: '', email: '' });
 
   const loadProducts = useCallback(async () => {
     const { data } = await supabase
@@ -88,6 +89,18 @@ export default function AdminPage() {
     setOrders((prev) => prev.map((o) => (String(o.id) === id ? { ...o, status } : o)));
   }, []);
 
+  const loadContacts = useCallback(async () => {
+    const { data } = await supabase.from('site_settings').select('contacts_heading, contacts_text, instagram_url, instagram_label, phone, email').eq('id', 1).single();
+    if (data) setContacts({ contacts_heading: data.contacts_heading ?? '', contacts_text: data.contacts_text ?? '', instagram_url: data.instagram_url ?? '', instagram_label: data.instagram_label ?? '', phone: data.phone ?? '', email: data.email ?? '' });
+  }, []);
+
+  async function handleSaveContacts(e: React.FormEvent) {
+    e.preventDefault();
+    setMsg('');
+    const { error } = await supabase.from('site_settings').update({ ...contacts, updated_at: new Date().toISOString() }).eq('id', 1);
+    setMsg(error ? ('\u041f\u043e\u043c\u0438\u043b\u043a\u0430: ' + error.message) : '\u041a\u043e\u043d\u0442\u0430\u043a\u0442\u0438 \u0437\u0431\u0435\u0440\u0435\u0436\u0435\u043d\u043e \u2713');
+  }
+
   useEffect(() => {
     async function init() {
       const { data: { user } } = await supabase.auth.getUser();
@@ -99,9 +112,10 @@ export default function AdminPage() {
       await loadProducts();
       await loadUsers();
       await loadOrders();
+      await loadContacts();
     }
     init();
-  }, [router, loadProducts, loadUsers, loadOrders]);
+  }, [router, loadProducts, loadUsers, loadOrders, loadContacts]);
 
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -211,6 +225,7 @@ export default function AdminPage() {
           <button onClick={() => setTab('products')} className={`rounded-xl px-5 py-2.5 text-sm font-semibold transition ${tab === 'products' ? 'bg-[#b5552e] text-white' : 'bg-white border border-[#f0e6da] text-[#5a4636]'}`}>Товари</button>
           <button onClick={() => setTab('users')} className={`rounded-xl px-5 py-2.5 text-sm font-semibold transition ${tab === 'users' ? 'bg-[#b5552e] text-white' : 'bg-white border border-[#f0e6da] text-[#5a4636]'}`}>Користувачі</button>
           <button onClick={() => setTab('orders')} className={`rounded-xl px-5 py-2.5 text-sm font-semibold transition ${tab === 'orders' ? 'bg-[#b5552e] text-white' : 'bg-white border border-[#f0e6da] text-[#5a4636]'}`}>Замовлення{newOrdersCount > 0 && (<span className="ml-2 inline-flex items-center justify-center rounded-full bg-red-500 px-2 py-0.5 text-xs font-bold text-white">{newOrdersCount}</span>)}</button>
+          <button onClick={() => setTab('contacts')} className={`rounded-xl px-5 py-2.5 text-sm font-semibold transition ${tab === 'contacts' ? 'bg-[#b5552e] text-white' : 'bg-white border border-[#f0e6da] text-[#5a4636]'}`}>Контакти</button>
         </div>
 
         {msg && <p className="mb-4 text-center text-sm text-[#5a4636]">{msg}</p>}
@@ -340,6 +355,36 @@ export default function AdminPage() {
               </table>
             )}
           </div>
+        )}
+
+        {tab === 'contacts' && (
+          <form onSubmit={handleSaveContacts} className="mx-auto max-w-2xl space-y-5 rounded-2xl border border-[#f0e6da] bg-white p-6 shadow-sm">
+            <div>
+              <label className="block text-sm font-semibold text-[#5a4636] mb-1">Заголовок</label>
+              <input value={contacts.contacts_heading} onChange={(e) => setContacts({ ...contacts, contacts_heading: e.target.value })} className="w-full rounded-lg border border-[#e3d6c7] bg-white px-3 py-2 text-[#473529] outline-none focus:border-[#e8a87c]" />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-[#5a4636] mb-1">Опис</label>
+              <textarea rows={3} value={contacts.contacts_text} onChange={(e) => setContacts({ ...contacts, contacts_text: e.target.value })} className="w-full rounded-lg border border-[#e3d6c7] bg-white px-3 py-2 text-[#473529] outline-none focus:border-[#e8a87c]" />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-[#5a4636] mb-1">Посилання Instagram</label>
+              <input value={contacts.instagram_url} onChange={(e) => setContacts({ ...contacts, instagram_url: e.target.value })} className="w-full rounded-lg border border-[#e3d6c7] bg-white px-3 py-2 text-[#473529] outline-none focus:border-[#e8a87c]" />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-[#5a4636] mb-1">Підпис кнопки Instagram</label>
+              <input value={contacts.instagram_label} onChange={(e) => setContacts({ ...contacts, instagram_label: e.target.value })} className="w-full rounded-lg border border-[#e3d6c7] bg-white px-3 py-2 text-[#473529] outline-none focus:border-[#e8a87c]" />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-[#5a4636] mb-1">Телефон</label>
+              <input value={contacts.phone} onChange={(e) => setContacts({ ...contacts, phone: e.target.value })} className="w-full rounded-lg border border-[#e3d6c7] bg-white px-3 py-2 text-[#473529] outline-none focus:border-[#e8a87c]" />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-[#5a4636] mb-1">Email</label>
+              <input value={contacts.email} onChange={(e) => setContacts({ ...contacts, email: e.target.value })} className="w-full rounded-lg border border-[#e3d6c7] bg-white px-3 py-2 text-[#473529] outline-none focus:border-[#e8a87c]" />
+            </div>
+            <button type="submit" className="w-full rounded-lg bg-[#b5552e] px-5 py-2.5 font-semibold text-white transition hover:bg-[#9d4726]">Зберегти</button>
+          </form>
         )}
       </div>
     </main>
