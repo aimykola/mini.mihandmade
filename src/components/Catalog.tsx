@@ -59,7 +59,7 @@ export default function Catalog() {
             <article key={p.id} className="flex flex-col overflow-hidden rounded-2xl border border-black/10 bg-white shadow-sm transition hover:shadow-md">
               <div className="relative aspect-square w-full bg-brand-soft/20">
                 <Image src={p.image} alt={p.name} fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" />
-                                  {(p.discount ?? 0) > 0 && (<span className="absolute right-2 top-2 z-10 rounded-full bg-[#b5552e] px-2.5 py-1 text-sm font-bold text-white shadow-md">−{p.discount}%</span>)}
+                                                  {(p.discount ?? 0) > 0 && (<span className="absolute left-0 top-3 z-10 flex items-center rounded-r-full bg-[#e23b2e] py-1.5 pl-3 pr-4 text-base font-extrabold uppercase tracking-wide text-white shadow-lg ring-2 ring-white/70">−{p.discount}%</span>)}
               </div>
               <div className="flex flex-1 flex-col p-4">
                 <h3 className="text-lg font-bold">{p.name}</h3>
