@@ -6,6 +6,7 @@ export type Product = {
   category: 'pled' | 'cardigan'
   image: string
   in_stock?: boolean
+  discount?: number
 }
 
             export const products: Product[] = [
