@@ -33,9 +33,9 @@ function ProductCard({ p, onAdd }: { p: Product; onAdd: (p: Product) => void }) 
   }
 
   return (
-    <article className="flex flex-col overflow-hidden rounded-2xl border border-black/10 bg-white shadow-sm transition hover:shadow-md">
+    <article className="group/card flex flex-col overflow-hidden rounded-2xl border border-black/10 bg-white shadow-sm transition duration-300 hover:-translate-y-1.5 hover:border-brand-soft/60 hover:shadow-xl">
       <div className="group relative aspect-square w-full bg-brand-soft/20">
-        <Image src={current} alt={p.name} fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" />
+        <Image src={current} alt={p.name} fill className="object-cover transition-transform duration-500 ease-out group-hover/card:scale-105" sizes="(max-width: 768px) 100vw, 33vw" />
         {discount > 0 && (
           <span className="absolute right-3 top-3 z-10 rounded-full bg-brand px-3 py-1 text-sm font-semibold text-white shadow-md">−{discount}%</span>
         )}
