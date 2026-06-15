@@ -3,6 +3,7 @@ import Catalog from '@/components/Catalog'
 import CartDrawer from '@/components/cart/CartDrawer'
 import { Hero, About, Reviews, Footer } from '@/components/Sections'
 import Contacts from '@/components/ContactsSection'
+import FloatingContact from '@/components/FloatingContact'
 
 export default function Home() {
   return (
@@ -17,6 +18,7 @@ export default function Home() {
                                                                 </main>
                                                                       <Footer />
                                                                             <CartDrawer />
+      <FloatingContact />
                                                                                 </>
                                                                                   )
                                                                                   }
