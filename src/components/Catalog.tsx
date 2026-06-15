@@ -90,16 +90,34 @@ function ProductCard({ p, onAdd }: { p: Product; onAdd: (p: Product) => void }) 
 
 type CategoryFilter = 'all' | 'pled' | 'cardigan'
 type SortOption = 'default' | 'price-asc' | 'price-desc'
+type Availability = 'all' | 'instock' | 'order'
+
+function getParam(key: string): string {
+  if (typeof window === 'undefined') return ''
+  return new URLSearchParams(window.location.search).get(key) ?? ''
+}
 
 export default function Catalog() {
   const { add } = useCart()
   const [products, setProducts] = useState<Product[]>(fallbackProducts)
   const [loading, setLoading] = useState(true)
 
-  const [category, setCategory] = useState<CategoryFilter>('all')
-  const [onlySale, setOnlySale] = useState(false)
-  const [sort, setSort] = useState<SortOption>('default')
-  const [query, setQuery] = useState('')
+  const [category, setCategory] = useState<CategoryFilter>(() => {
+    const c = getParam('cat')
+    return c === 'pled' || c === 'cardigan' ? c : 'all'
+  })
+  const [onlySale, setOnlySale] = useState(() => getParam('sale') === '1')
+  const [availability, setAvailability] = useState<Availability>(() => {
+    const a = getParam('av')
+    return a === 'instock' || a === 'order' ? a : 'all'
+  })
+  const [sort, setSort] = useState<SortOption>(() => {
+    const s = getParam('sort')
+    return s === 'price-asc' || s === 'price-desc' ? s : 'default'
+  })
+  const [query, setQuery] = useState(() => getParam('q'))
+  const [minPrice, setMinPrice] = useState(() => getParam('min'))
+  const [maxPrice, setMaxPrice] = useState(() => getParam('max'))
 
   useEffect(() => {
     async function load() {
@@ -127,10 +145,33 @@ export default function Catalog() {
     load()
   }, [])
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams()
+    if (category !== 'all') params.set('cat', category)
+    if (onlySale) params.set('sale', '1')
+    if (availability !== 'all') params.set('av', availability)
+    if (sort !== 'default') params.set('sort', sort)
+    if (query.trim()) params.set('q', query.trim())
+    if (minPrice.trim()) params.set('min', minPrice.trim())
+    if (maxPrice.trim()) params.set('max', maxPrice.trim())
+    const qs = params.toString()
+    const url = window.location.pathname + (qs ? `?${qs}` : '') + '#catalog'
+    window.history.replaceState(null, '', url)
+  }, [category, onlySale, availability, sort, query, minPrice, maxPrice])
+
   const visible = useMemo(() => {
+    const min = minPrice.trim() ? Number(minPrice) : null
+    const max = maxPrice.trim() ? Number(maxPrice) : null
     let list = products.filter((p) => {
       if (category !== 'all' && p.category !== category) return false
       if (onlySale && (p.discount ?? 0) <= 0) return false
+      const inStock = p.in_stock === false
+      if (availability === 'instock' && !inStock) return false
+      if (availability === 'order' && inStock) return false
+      const eff = Math.round(p.price * (1 - (p.discount ?? 0) / 100))
+      if (min !== null && !Number.isNaN(min) && eff < min) return false
+      if (max !== null && !Number.isNaN(max) && eff > max) return false
       if (query.trim() && !p.name.toLowerCase().includes(query.trim().toLowerCase())) return false
       return true
     })
@@ -138,9 +179,21 @@ export default function Catalog() {
     if (sort === 'price-asc') list = [...list].sort((a, b) => eff(a) - eff(b))
     if (sort === 'price-desc') list = [...list].sort((a, b) => eff(b) - eff(a))
     return list
-  }, [products, category, onlySale, sort, query])
+  }, [products, category, onlySale, availability, sort, query, minPrice, maxPrice])
 
   const saleCount = useMemo(() => products.filter((p) => (p.discount ?? 0) > 0).length, [products])
+
+  function resetFilters() {
+    setCategory('all')
+    setOnlySale(false)
+    setAvailability('all')
+    setSort('default')
+    setQuery('')
+    setMinPrice('')
+    setMaxPrice('')
+  }
+
+  const filtersActive = category !== 'all' || onlySale || availability !== 'all' || sort !== 'default' || query.trim() !== '' || minPrice.trim() !== '' || maxPrice.trim() !== ''
 
   const tabs: { key: CategoryFilter; label: string }[] = [
     { key: 'all', label: 'Всі' },
@@ -148,57 +201,114 @@ export default function Catalog() {
     { key: 'cardigan', label: 'Кардигани' },
   ]
 
+  const availTabs: { key: Availability; label: string }[] = [
+    { key: 'all', label: 'Усі' },
+    { key: 'instock', label: 'В наявності' },
+    { key: 'order', label: 'Під замовлення' },
+  ]
+
   return (
     <section id="catalog" className="mx-auto max-w-6xl px-4 py-16">
       <h2 className="text-center text-3xl font-extrabold text-brand-dark">Наші вироби</h2>
       <p className="mx-auto mt-2 max-w-xl text-center text-foreground/70">Пледи та кардигани ручної роботи із гіпоалергенної пряжі</p>
 
-      <div className="mt-8 flex flex-col gap-4 rounded-2xl border border-black/5 bg-white/60 p-4 shadow-sm sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-        <div className="flex flex-wrap gap-2">
-          {tabs.map((t) => (
+      <div className="mt-8 flex flex-col gap-4 rounded-2xl border border-black/5 bg-white/60 p-4 shadow-sm">
+        <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+          <div className="flex flex-wrap gap-2">
+            {tabs.map((t) => (
+              <button
+                key={t.key}
+                type="button"
+                onClick={() => setCategory(t.key)}
+                className={`rounded-full px-4 py-2 text-sm font-semibold transition ${category === t.key ? 'bg-brand text-white shadow' : 'bg-brand-soft/20 text-brand-dark hover:bg-brand-soft/40'}`}
+              >
+                {t.label}
+              </button>
+            ))}
             <button
-              key={t.key}
               type="button"
-              onClick={() => setCategory(t.key)}
-              className={`rounded-full px-4 py-2 text-sm font-semibold transition ${category === t.key ? 'bg-brand text-white shadow' : 'bg-brand-soft/20 text-brand-dark hover:bg-brand-soft/40'}`}
+              onClick={() => setOnlySale((v) => !v)}
+              className={`rounded-full px-4 py-2 text-sm font-semibold transition ${onlySale ? 'bg-brand text-white shadow' : 'bg-brand-soft/20 text-brand-dark hover:bg-brand-soft/40'}`}
             >
-              {t.label}
+              Зі знижкою{saleCount > 0 ? ` (${saleCount})` : ''}
             </button>
-          ))}
-          <button
-            type="button"
-            onClick={() => setOnlySale((v) => !v)}
-            className={`rounded-full px-4 py-2 text-sm font-semibold transition ${onlySale ? 'bg-brand text-white shadow' : 'bg-brand-soft/20 text-brand-dark hover:bg-brand-soft/40'}`}
-          >
-            Зі знижкою{saleCount > 0 ? ` (${saleCount})` : ''}
-          </button>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Пошук за назвою..."
+              className="w-full rounded-full border border-black/10 bg-white px-4 py-2 text-sm outline-none transition focus:border-brand sm:w-48"
+            />
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value as SortOption)}
+              className="rounded-full border border-black/10 bg-white px-4 py-2 text-sm text-brand-dark outline-none transition focus:border-brand"
+            >
+              <option value="default">За замовчуванням</option>
+              <option value="price-asc">Спочатку дешевші</option>
+              <option value="price-desc">Спочатку дорожчі</option>
+            </select>
+          </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Пошук за назвою..."
-            className="w-full rounded-full border border-black/10 bg-white px-4 py-2 text-sm outline-none transition focus:border-brand sm:w-48"
-          />
-          <select
-            value={sort}
-            onChange={(e) => setSort(e.target.value as SortOption)}
-            className="rounded-full border border-black/10 bg-white px-4 py-2 text-sm text-brand-dark outline-none transition focus:border-brand"
-          >
-            <option value="default">За замовчуванням</option>
-            <option value="price-asc">Спочатку дешевші</option>
-            <option value="price-desc">Спочатку дорожчі</option>
-          </select>
+        <div className="flex flex-col gap-3 border-t border-black/5 pt-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
+          <div className="flex flex-wrap items-center gap-2">
+            {availTabs.map((t) => (
+              <button
+                key={t.key}
+                type="button"
+                onClick={() => setAvailability(t.key)}
+                className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${availability === t.key ? 'bg-brand text-white shadow' : 'bg-brand-soft/20 text-brand-dark hover:bg-brand-soft/40'}`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-foreground/60">Ціна, грн:</span>
+            <input
+              type="number"
+              inputMode="numeric"
+              min="0"
+              value={minPrice}
+              onChange={(e) => setMinPrice(e.target.value)}
+              placeholder="від"
+              className="w-20 rounded-full border border-black/10 bg-white px-3 py-1.5 text-xs outline-none transition focus:border-brand"
+            />
+            <span className="text-foreground/40">–</span>
+            <input
+              type="number"
+              inputMode="numeric"
+              min="0"
+              value={maxPrice}
+              onChange={(e) => setMaxPrice(e.target.value)}
+              placeholder="до"
+              className="w-20 rounded-full border border-black/10 bg-white px-3 py-1.5 text-xs outline-none transition focus:border-brand"
+            />
+          </div>
+          {filtersActive && (
+            <button
+              type="button"
+              onClick={resetFilters}
+              className="rounded-full px-3 py-1.5 text-xs font-semibold text-brand-dark underline-offset-2 transition hover:underline"
+            >
+              Скинути фільтри
+            </button>
+          )}
         </div>
       </div>
+
+      {!loading && (
+        <p className="mt-4 text-sm text-foreground/60">Знайдено: {visible.length}</p>
+      )}
 
       {loading && products.length === 0 ? (
         <p className="mt-10 text-center text-foreground/50">Завантаження...</p>
       ) : visible.length === 0 ? (
         <p className="mt-10 text-center text-foreground/50">Нічого не знайдено</p>
       ) : (
-        <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {visible.map((p) => (
             <ProductCard key={p.id} p={p} onAdd={add} />
           ))}
