@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
 import { products as fallbackProducts, type Product } from '@/lib/products'
 import { supabase } from '@/lib/supabase'
@@ -88,10 +88,18 @@ function ProductCard({ p, onAdd }: { p: Product; onAdd: (p: Product) => void }) 
   )
 }
 
+type CategoryFilter = 'all' | 'pled' | 'cardigan'
+type SortOption = 'default' | 'price-asc' | 'price-desc'
+
 export default function Catalog() {
   const { add } = useCart()
   const [products, setProducts] = useState<Product[]>(fallbackProducts)
   const [loading, setLoading] = useState(true)
+
+  const [category, setCategory] = useState<CategoryFilter>('all')
+  const [onlySale, setOnlySale] = useState(false)
+  const [sort, setSort] = useState<SortOption>('default')
+  const [query, setQuery] = useState('')
 
   useEffect(() => {
     async function load() {
@@ -119,15 +127,79 @@ export default function Catalog() {
     load()
   }, [])
 
+  const visible = useMemo(() => {
+    let list = products.filter((p) => {
+      if (category !== 'all' && p.category !== category) return false
+      if (onlySale && (p.discount ?? 0) <= 0) return false
+      if (query.trim() && !p.name.toLowerCase().includes(query.trim().toLowerCase())) return false
+      return true
+    })
+    const eff = (p: Product) => Math.round(p.price * (1 - (p.discount ?? 0) / 100))
+    if (sort === 'price-asc') list = [...list].sort((a, b) => eff(a) - eff(b))
+    if (sort === 'price-desc') list = [...list].sort((a, b) => eff(b) - eff(a))
+    return list
+  }, [products, category, onlySale, sort, query])
+
+  const saleCount = useMemo(() => products.filter((p) => (p.discount ?? 0) > 0).length, [products])
+
+  const tabs: { key: CategoryFilter; label: string }[] = [
+    { key: 'all', label: 'Всі' },
+    { key: 'pled', label: 'Пледи' },
+    { key: 'cardigan', label: 'Кардигани' },
+  ]
+
   return (
     <section id="catalog" className="mx-auto max-w-6xl px-4 py-16">
       <h2 className="text-center text-3xl font-extrabold text-brand-dark">Наші вироби</h2>
       <p className="mx-auto mt-2 max-w-xl text-center text-foreground/70">Пледи та кардигани ручної роботи із гіпоалергенної пряжі</p>
+
+      <div className="mt-8 flex flex-col gap-4 rounded-2xl border border-black/5 bg-white/60 p-4 shadow-sm sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+        <div className="flex flex-wrap gap-2">
+          {tabs.map((t) => (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => setCategory(t.key)}
+              className={`rounded-full px-4 py-2 text-sm font-semibold transition ${category === t.key ? 'bg-brand text-white shadow' : 'bg-brand-soft/20 text-brand-dark hover:bg-brand-soft/40'}`}
+            >
+              {t.label}
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={() => setOnlySale((v) => !v)}
+            className={`rounded-full px-4 py-2 text-sm font-semibold transition ${onlySale ? 'bg-brand text-white shadow' : 'bg-brand-soft/20 text-brand-dark hover:bg-brand-soft/40'}`}
+          >
+            Зі знижкою{saleCount > 0 ? ` (${saleCount})` : ''}
+          </button>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Пошук за назвою..."
+            className="w-full rounded-full border border-black/10 bg-white px-4 py-2 text-sm outline-none transition focus:border-brand sm:w-48"
+          />
+          <select
+            value={sort}
+            onChange={(e) => setSort(e.target.value as SortOption)}
+            className="rounded-full border border-black/10 bg-white px-4 py-2 text-sm text-brand-dark outline-none transition focus:border-brand"
+          >
+            <option value="default">За замовчуванням</option>
+            <option value="price-asc">Спочатку дешевші</option>
+            <option value="price-desc">Спочатку дорожчі</option>
+          </select>
+        </div>
+      </div>
+
       {loading && products.length === 0 ? (
         <p className="mt-10 text-center text-foreground/50">Завантаження...</p>
+      ) : visible.length === 0 ? (
+        <p className="mt-10 text-center text-foreground/50">Нічого не знайдено</p>
       ) : (
         <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {products.map((p) => (
+          {visible.map((p) => (
             <ProductCard key={p.id} p={p} onAdd={add} />
           ))}
         </div>
