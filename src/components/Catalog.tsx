@@ -37,7 +37,7 @@ function ProductCard({ p, onAdd }: { p: Product; onAdd: (p: Product) => void }) 
       <div className="group relative aspect-square w-full bg-brand-soft/20">
         <Image src={current} alt={p.name} fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" />
         {discount > 0 && (
-          <span className="absolute left-0 top-3 z-10 flex items-center rounded-r-full bg-[#e23b2e] py-1.5 pl-3 pr-4 text-base font-extrabold uppercase tracking-wide text-white shadow-lg ring-2 ring-white/70">−{discount}%</span>
+          <span className="absolute right-3 top-3 z-10 rounded-full bg-brand px-3 py-1 text-sm font-semibold text-white shadow-md">−{discount}%</span>
         )}
         {total > 1 && (
           <>
