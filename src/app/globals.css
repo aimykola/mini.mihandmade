@@ -69,11 +69,11 @@ body {
 
 /* Gentle breathing of the logo after it knits in */
 @keyframes logo-breathe {
-  0%, 100% { transform: translateY(0) scale(1); }
-  50% { transform: translateY(-6px) scale(1.015); }
+  0%, 100% { transform: translateY(0) scale(1) rotate(0deg); }
+  50% { transform: translateY(-16px) scale(1.05) rotate(-1.2deg); }
 }
 .logo-breathe {
-  animation: logo-breathe 6s ease-in-out 1.7s infinite;
+  animation: logo-breathe 4.5s ease-in-out 1.7s infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
