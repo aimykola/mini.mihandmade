@@ -202,7 +202,7 @@ export default function Catalog() {
   ]
 
   const availTabs: { key: Availability; label: string }[] = [
-    { key: 'all', label: 'Усі' },
+    { key: 'all', label: 'Будь-яка' },
     { key: 'instock', label: 'В наявності' },
     { key: 'order', label: 'Під замовлення' },
   ]
@@ -214,7 +214,8 @@ export default function Catalog() {
 
       <div className="mt-8 flex flex-col gap-4 rounded-2xl border border-black/5 bg-white/60 p-4 shadow-sm">
         <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm font-medium text-foreground/60">Категорія:</span>
             {tabs.map((t) => (
               <button
                 key={t.key}
@@ -247,26 +248,27 @@ export default function Catalog() {
               className="rounded-full border border-black/10 bg-white px-4 py-2 text-sm text-brand-dark outline-none transition focus:border-brand"
             >
               <option value="default">За замовчуванням</option>
-              <option value="price-asc">Спочатку дешевші</option>
-              <option value="price-desc">Спочатку дорожчі</option>
+              <option value="price-asc">Дешевші спершу</option>
+              <option value="price-desc">Дорожчі спершу</option>
             </select>
           </div>
         </div>
-        <div className="flex flex-col gap-3 border-t border-black/5 pt-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
+        <div className="flex flex-col gap-4 border-t border-black/5 pt-4 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
           <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm font-medium text-foreground/60">Наявність:</span>
             {availTabs.map((t) => (
               <button
                 key={t.key}
                 type="button"
                 onClick={() => setAvailability(t.key)}
-                className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${availability === t.key ? 'bg-brand text-white shadow' : 'bg-brand-soft/20 text-brand-dark hover:bg-brand-soft/40'}`}
+                className={`rounded-full px-4 py-2 text-sm font-semibold transition ${availability === t.key ? 'bg-brand text-white shadow' : 'bg-brand-soft/20 text-brand-dark hover:bg-brand-soft/40'}`}
               >
                 {t.label}
               </button>
             ))}
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-medium text-foreground/60">Ціна, грн:</span>
+            <span className="text-sm font-medium text-foreground/60">Ціна, грн:</span>
             <input
               type="number"
               inputMode="numeric"
@@ -274,9 +276,9 @@ export default function Catalog() {
               value={minPrice}
               onChange={(e) => setMinPrice(e.target.value)}
               placeholder="від"
-              className="w-20 rounded-full border border-black/10 bg-white px-3 py-1.5 text-xs outline-none transition focus:border-brand"
+              className="w-24 rounded-full border border-black/10 bg-white px-4 py-2 text-sm outline-none transition focus:border-brand"
             />
-            <span className="text-foreground/40">–</span>
+            <span className="text-foreground/40">—</span>
             <input
               type="number"
               inputMode="numeric"
@@ -284,14 +286,14 @@ export default function Catalog() {
               value={maxPrice}
               onChange={(e) => setMaxPrice(e.target.value)}
               placeholder="до"
-              className="w-20 rounded-full border border-black/10 bg-white px-3 py-1.5 text-xs outline-none transition focus:border-brand"
+              className="w-24 rounded-full border border-black/10 bg-white px-4 py-2 text-sm outline-none transition focus:border-brand"
             />
           </div>
           {filtersActive && (
             <button
               type="button"
               onClick={resetFilters}
-              className="rounded-full px-3 py-1.5 text-xs font-semibold text-brand-dark underline-offset-2 transition hover:underline"
+              className="rounded-full px-4 py-2 text-sm font-semibold text-brand-dark underline-offset-2 transition hover:underline sm:ml-auto"
             >
               Скинути фільтри
             </button>
