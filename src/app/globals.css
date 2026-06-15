@@ -28,3 +28,55 @@ body {
     color: var(--foreground);
     font-family: var(--font-sans), system-ui, sans-serif;
 }
+
+
+/* === WOW effects === */
+
+/* Reveal on scroll */
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Logo "knitting" reveal on load */
+@keyframes knit-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.82) rotate(-4deg);
+    filter: blur(6px);
+    clip-path: inset(100% 0 0 0);
+  }
+  55% {
+    opacity: 1;
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+    filter: blur(0);
+    clip-path: inset(0 0 0 0);
+  }
+}
+.knit-in {
+  animation: knit-in 1.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Gentle breathing of the logo after it knits in */
+@keyframes logo-breathe {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-6px) scale(1.015); }
+}
+.logo-breathe {
+  animation: logo-breathe 6s ease-in-out 1.7s infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; transition: none; }
+  .knit-in, .logo-breathe { animation: none; }
+}
