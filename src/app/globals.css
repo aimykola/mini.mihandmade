@@ -78,5 +78,29 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .reveal { opacity: 1; transform: none; transition: none; }
-  .knit-in, .logo-breathe { animation: none; }
+  .knit-in, .logo-breathe, .knit-letter { animation: none; opacity: 1; }
+}
+
+
+/* Per-letter knitting reveal */
+@keyframes knit-letter-in {
+  0% {
+    opacity: 0;
+    transform: translateY(0.5em) scale(0.6) rotate(-8deg);
+    filter: blur(4px);
+  }
+  60% {
+    opacity: 1;
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotate(0deg);
+    filter: blur(0);
+  }
+}
+.knit-letter {
+  display: inline-block;
+  opacity: 0;
+  animation: knit-letter-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
