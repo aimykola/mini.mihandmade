@@ -1,12 +1,10 @@
 import Image from 'next/image'
 import Reveal from './Reveal'
-import YarnCursor from './YarnCursor'
 import KnitText from './KnitText'
 
 export function Hero() {
   return (
     <section id="top" className="relative overflow-hidden">
-      <YarnCursor />
       <div className="relative z-10 mx-auto grid max-w-6xl items-center gap-8 px-4 py-16 md:grid-cols-2 md:py-24">
         <Reveal>
           <p className="font-semibold uppercase tracking-wider text-brand">MINIMI handmade</p>
