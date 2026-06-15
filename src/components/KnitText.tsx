@@ -18,29 +18,29 @@ export default function KnitText({
   startDelay = 200,
 }: KnitTextProps) {
   const Tag = (as ?? 'span') as ElementType
-  const words = text.split(' ')
-  let index = 0
+  const chars = Array.from(text)
 
   return (
     <Tag className={className} aria-label={text}>
-      {words.map((word, wi) => (
-        <span key={wi} className="inline-block whitespace-nowrap" aria-hidden>
-          {Array.from(word).map((char, ci) => {
-            const delay = startDelay + index * stagger
-            index += 1
-            return (
-              <span
-                key={ci}
-                className="knit-letter inline-block"
-                style={{ animationDelay: delay + 'ms' }}
-              >
-                {char}
-              </span>
-            )
-          })}
-          {wi < words.length - 1 ? '\u00A0' : ''}
-        </span>
-      ))}
+      {chars.map((char, i) => {
+        if (char === ' ') {
+          return (
+            <span key={i} aria-hidden>
+              {'\u00A0'}
+            </span>
+          )
+        }
+        return (
+          <span
+            key={i}
+            aria-hidden
+            className="knit-letter inline-block"
+            style={{ animationDelay: startDelay + i * stagger + 'ms' }}
+          >
+            {char}
+          </span>
+        )
+      })}
     </Tag>
   )
 }
