@@ -5,6 +5,7 @@ export type Product = {
   price: number
   category: 'pled' | 'cardigan'
   image: string
+  images?: string[]
   in_stock?: boolean
   discount?: number
 }
