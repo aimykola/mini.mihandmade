@@ -13,8 +13,8 @@ export function Hero() {
             <a href="#contacts" className="rounded-lg border border-brand px-6 py-3 font-semibold text-brand-dark transition hover:bg-brand-soft/20">Звʼязатись</a>
           </div>
         </div>
-        <div className="flex aspect-square w-full items-center justify-center rounded-3xl bg-gradient-to-br from-brand-soft/40 to-accent-pink/40 p-8">
-          <Image src="/logo.png" alt="MINIMI Handmade" width={320} height={320} className="h-auto w-2/3 max-w-xs object-contain" priority />
+        <div className="flex aspect-square w-full items-center justify-center rounded-3xl bg-gradient-to-br from-brand-soft/40 to-accent-pink/40 p-6">
+          <Image src="/logo.png" alt="MINIMI Handmade" width={420} height={420} className="h-auto w-5/6 max-w-md object-contain" priority />
         </div>
       </div>
     </section>
