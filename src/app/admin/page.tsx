@@ -60,7 +60,7 @@ export default function AdminPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [msg, setMsg] = useState('');
   const [uploading, setUploading] = useState(false);
-  const [contacts, setContacts] = useState({ contacts_heading: '', contacts_text: '', instagram_url: '', instagram_label: '', phone: '', email: '' });
+  const [contacts, setContacts] = useState({ contacts_heading: '', contacts_text: '', instagram_url: '', instagram_label: '', phone: '', email: '', viber_url: '', telegram_url: '' });
 
   const loadProducts = useCallback(async () => {
     const { data } = await supabase
@@ -92,8 +92,8 @@ export default function AdminPage() {
   }, []);
 
   const loadContacts = useCallback(async () => {
-    const { data } = await supabase.from('site_settings').select('contacts_heading, contacts_text, instagram_url, instagram_label, phone, email').eq('id', 1).single();
-    if (data) setContacts({ contacts_heading: data.contacts_heading ?? '', contacts_text: data.contacts_text ?? '', instagram_url: data.instagram_url ?? '', instagram_label: data.instagram_label ?? '', phone: data.phone ?? '', email: data.email ?? '' });
+    const { data } = await supabase.from('site_settings').select('contacts_heading, contacts_text, instagram_url, instagram_label, phone, email, viber_url, telegram_url').eq('id', 1).single();
+    if (data) setContacts({ contacts_heading: data.contacts_heading ?? '', contacts_text: data.contacts_text ?? '', instagram_url: data.instagram_url ?? '', instagram_label: data.instagram_label ?? '', phone: data.phone ?? '', email: data.email ?? '', viber_url: data.viber_url ?? '', telegram_url: data.telegram_url ?? '' });
   }, []);
 
   async function handleSaveContacts(e: React.FormEvent) {
@@ -406,6 +406,14 @@ export default function AdminPage() {
             <div>
               <label className="block text-sm font-semibold text-[#5a4636] mb-1">Телефон</label>
               <input value={contacts.phone} onChange={(e) => setContacts({ ...contacts, phone: e.target.value })} className="w-full rounded-lg border border-[#e3d6c7] bg-white px-3 py-2 text-[#473529] outline-none focus:border-[#e8a87c]" />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-[#5a4636] mb-1">Viber (посилання або номер)</label>
+              <input value={contacts.viber_url} onChange={(e) => setContacts({ ...contacts, viber_url: e.target.value })} className="w-full rounded-lg border border-[#e3d6c7] bg-white px-3 py-2 text-[#473529] outline-none focus:border-[#e8a87c]" />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-[#5a4636] mb-1">Telegram (посилання)</label>
+              <input value={contacts.telegram_url} onChange={(e) => setContacts({ ...contacts, telegram_url: e.target.value })} className="w-full rounded-lg border border-[#e3d6c7] bg-white px-3 py-2 text-[#473529] outline-none focus:border-[#e8a87c]" />
             </div>
             <div>
               <label className="block text-sm font-semibold text-[#5a4636] mb-1">Email</label>
