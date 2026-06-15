@@ -13,6 +13,7 @@ type Product = {
   price: number;
   category: string;
   image: string | null;
+  images: string[];
   active: boolean;
   in_stock: boolean;
   discount: number;
@@ -27,7 +28,7 @@ type UserRow = {
   role: string | null;
 };
 
-const empty = { name: '', description: '', price: 0, category: 'pled', slug: '', image: '', discount: 0 };
+const empty = { name: '', description: '', price: 0, category: 'pled', slug: '', image: '', images: [], discount: 0 };
 
 const STATUS_MAP: Record<string, { label: string; cls: string }> = {
   new: { label: 'В обробці', cls: 'bg-[#f0e6da] text-[#9c8a78]' },
@@ -64,7 +65,7 @@ export default function AdminPage() {
   const loadProducts = useCallback(async () => {
     const { data } = await supabase
       .from('products')
-      .select('id, slug, name, description, price, category, image, active, in_stock, discount')
+      .select('id, slug, name, description, price, category, image, images, active, in_stock, discount')
       .order('created_at', { ascending: true });
     setProducts((data as Product[]) ?? []);
   }, []);
@@ -119,22 +120,26 @@ export default function AdminPage() {
   }, [router, loadProducts, loadUsers, loadOrders, loadContacts]);
 
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
     setUploading(true);
     setMsg('');
-    const ext = file.name.split('.').pop();
-    const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-    const { error } = await supabase.storage.from('product-images').upload(path, file, { upsert: false });
-    if (error) {
-      setMsg('Помилка завантаження зображення: ' + error.message);
-      setUploading(false);
-      return;
+    const uploaded: string[] = [];
+    for (const file of Array.from(files)) {
+      const ext = file.name.split('.').pop();
+      const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error } = await supabase.storage.from('product-images').upload(path, file, { upsert: false });
+      if (error) {
+        setMsg('Помилка завантаження зображення: ' + error.message);
+        setUploading(false);
+        return;
+      }
+      const { data } = supabase.storage.from('product-images').getPublicUrl(path);
+      uploaded.push(data.publicUrl);
     }
-    const { data } = supabase.storage.from('product-images').getPublicUrl(path);
-    setForm((f) => ({ ...f, image: data.publicUrl }));
+    setForm((f) => ({ ...f, images: [...f.images, ...uploaded], image: f.image || uploaded[0] }));
     setUploading(false);
-    setMsg('Зображення завантажено ✓');
+    setMsg('');
   }
 
   async function handleSaveProduct(e: React.FormEvent) {
@@ -148,6 +153,7 @@ export default function AdminPage() {
       category: form.category,
       slug: form.slug || null,
       image: form.image || null,
+      images: form.images,
     };
     let error;
     if (editingId) {
@@ -164,7 +170,7 @@ export default function AdminPage() {
 
   function startEdit(p: Product) {
     setEditingId(p.id);
-    setForm({ name: p.name, description: p.description ?? '', price: p.price, category: p.category, slug: p.slug ?? '', image: p.image ?? '', discount: p.discount });
+    setForm({ name: p.name, description: p.description ?? '', price: p.price, category: p.category, slug: p.slug ?? '', image: p.image ?? '', images: p.images ?? [], discount: p.discount });
     setMsg('');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -256,10 +262,19 @@ export default function AdminPage() {
                 </select>
                 <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Опис" className="sm:col-span-2 rounded-lg border border-[#e8dccb] px-3 py-2 text-[#5a4636] outline-none focus:border-[#b5552e]" rows={3} />
                 <div className="sm:col-span-2">
-                  <label className="mb-1 block text-xs font-medium text-gray-400">Зображення</label>
-                  <input type="file" accept="image/*" onChange={handleImageUpload} className="text-sm text-[#5a4636]" />
+                  <label className="mb-1 block text-xs font-medium text-gray-400">Зображення (можна декілька)</label>
+                  <input type="file" accept="image/*" multiple onChange={handleImageUpload} className="text-sm text-[#5a4636]" />
                   {uploading && <span className="ml-2 text-xs text-gray-400">Завантаження...</span>}
-                  {form.image && <img src={form.image} alt="" className="mt-2 h-20 w-20 rounded-lg object-cover" />}
+                  {form.images.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {form.images.map((img, i) => (
+                        <div key={i} className="relative">
+                          <img src={img} alt="" className="h-20 w-20 rounded-lg object-cover" />
+                          <button type="button" onClick={() => setForm((f) => ({ ...f, images: f.images.filter((_, j) => j !== i), image: f.image === img ? (f.images.filter((_, j) => j !== i)[0] || '') : f.image }))} className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-[#e23b2e] text-xs font-bold text-white">×</button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="mt-4 flex items-center gap-3">
