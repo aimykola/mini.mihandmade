@@ -79,7 +79,7 @@ const advantages = [
               export function Footer() {
                   return (
                         <footer className="border-t border-black/10 py-8 text-center text-sm text-foreground/60">
-                          <p>© {new Date().getFullYear()} MINIMI handmade · Ручна робота з любовʼю</p>
+                          <p>© 2025 MINIMI handmade · Ручна робота з любовʼю</p>
     </footer>
   )
   }
