@@ -15,6 +15,7 @@ type Product = {
   image: string | null;
   active: boolean;
   in_stock: boolean;
+  discount: number;
 };
 
 type UserRow = {
@@ -26,7 +27,7 @@ type UserRow = {
   role: string | null;
 };
 
-const empty = { name: '', description: '', price: 0, category: 'pled', slug: '', image: '' };
+const empty = { name: '', description: '', price: 0, category: 'pled', slug: '', image: '', discount: 0 };
 
 const STATUS_MAP: Record<string, { label: string; cls: string }> = {
   new: { label: 'В обробці', cls: 'bg-[#f0e6da] text-[#9c8a78]' },
@@ -63,7 +64,7 @@ export default function AdminPage() {
   const loadProducts = useCallback(async () => {
     const { data } = await supabase
       .from('products')
-      .select('id, slug, name, description, price, category, image, active, in_stock')
+      .select('id, slug, name, description, price, category, image, active, in_stock, discount')
       .order('created_at', { ascending: true });
     setProducts((data as Product[]) ?? []);
   }, []);
@@ -143,6 +144,7 @@ export default function AdminPage() {
       name: form.name,
       description: form.description,
       price: Number(form.price),
+      discount: Number(form.discount),
       category: form.category,
       slug: form.slug || null,
       image: form.image || null,
@@ -162,7 +164,7 @@ export default function AdminPage() {
 
   function startEdit(p: Product) {
     setEditingId(p.id);
-    setForm({ name: p.name, description: p.description ?? '', price: p.price, category: p.category, slug: p.slug ?? '', image: p.image ?? '' });
+    setForm({ name: p.name, description: p.description ?? '', price: p.price, category: p.category, slug: p.slug ?? '', image: p.image ?? '', discount: p.discount });
     setMsg('');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -247,6 +249,7 @@ export default function AdminPage() {
                 <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required placeholder="Назва" className="rounded-lg border border-[#e8dccb] px-3 py-2 text-[#5a4636] outline-none focus:border-[#b5552e]" />
                 <input value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })} placeholder="Slug (необовʼязково)" className="rounded-lg border border-[#e8dccb] px-3 py-2 text-[#5a4636] outline-none focus:border-[#b5552e]" />
                 <input type="number" value={form.price} onChange={(e) => setForm({ ...form, price: Number(e.target.value) })} required placeholder="Ціна" className="rounded-lg border border-[#e8dccb] px-3 py-2 text-[#5a4636] outline-none focus:border-[#b5552e]" />
+                <input type="number" min={0} max={100} value={form.discount} onChange={(e) => setForm({ ...form, discount: Number(e.target.value) })} placeholder="Знижка %" className="rounded-lg border border-[#e8dccb] px-3 py-2 text-[#5a4636] outline-none focus:border-[#b5552e]" />
                 <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="rounded-lg border border-[#e8dccb] px-3 py-2 text-[#5a4636] outline-none focus:border-[#b5552e]">
                   <option value="pled">Плед</option>
                   <option value="cardigan">Кардиган</option>
@@ -273,7 +276,7 @@ export default function AdminPage() {
                     {p.image ? <img src={p.image} alt="" className="h-12 w-12 rounded-lg object-cover" /> : <div className="h-12 w-12 rounded-lg bg-[#fbeee2]" />}
                     <div className="flex-1">
                       <p className="font-semibold text-[#5a4636]">{p.name} {!p.active && <span className="text-xs text-gray-400">(приховано)</span>} <span className={`text-xs ${p.in_stock ? 'text-green-700' : 'text-[#b5552e]'}`}>{p.in_stock ? '• в наявності' : '• під замовлення'}</span></p>
-                      <p className="text-sm text-gray-400">{p.price} грн · {p.category}</p>
+                      <p className="text-sm text-gray-400">{p.price} грн · {p.category}{p.discount > 0 && <span className="ml-2 font-semibold text-[#b5552e]">−{p.discount}%</span>}</p>
                     </div>
                     <button onClick={() => startEdit(p)} className="text-sm text-[#b5552e] hover:underline">Редагувати</button>
                     <button onClick={() => toggleActive(p)} className="text-sm text-[#5a4636] hover:underline">{p.active ? 'Приховати' : 'Показати'}</button>
