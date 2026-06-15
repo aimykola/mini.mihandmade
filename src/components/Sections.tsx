@@ -1,13 +1,16 @@
 import Image from 'next/image'
 import Reveal from './Reveal'
+import YarnCursor from './YarnCursor'
+import KnitText from './KnitText'
 
 export function Hero() {
   return (
     <section id="top" className="relative overflow-hidden">
-      <div className="mx-auto grid max-w-6xl items-center gap-8 px-4 py-16 md:grid-cols-2 md:py-24">
+      <YarnCursor />
+      <div className="relative z-10 mx-auto grid max-w-6xl items-center gap-8 px-4 py-16 md:grid-cols-2 md:py-24">
         <Reveal>
           <p className="font-semibold uppercase tracking-wider text-brand">MINIMI handmade</p>
-          <h1 className="mt-3 text-4xl font-extrabold leading-tight text-brand-dark md:text-5xl">Пледи та кардигани ручної роботи з любовʼю</h1>
+          <KnitText as="h1" text="Пледи та кардигани ручної роботи з любовʼю" className="mt-3 block text-4xl font-extrabold leading-tight text-brand-dark md:text-5xl" />
           <p className="mt-4 max-w-md text-lg text-foreground/70">Ідеальне рішення для вашого комфорту. Гіпоалергенна пряжа, тепло та затишок у кожній петельці.</p>
           <div className="mt-6 flex gap-3">
             <a href="#catalog" className="rounded-lg bg-brand px-6 py-3 font-semibold text-white transition hover:bg-brand-dark">Переглянути вироби</a>
