@@ -28,7 +28,7 @@ type UserRow = {
   role: string | null;
 };
 
-const empty = { name: '', description: '', price: 0, category: 'pled', slug: '', image: '', images: [], discount: 0 };
+const empty = { name: '', description: '', price: 0, category: 'pled', slug: '', image: '', images: [] as string[], discount: 0 };
 
 const STATUS_MAP: Record<string, { label: string; cls: string }> = {
   new: { label: 'В обробці', cls: 'bg-[#f0e6da] text-[#9c8a78]' },
