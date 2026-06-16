@@ -15,6 +15,7 @@ export default function CartDrawer() {
   const [step, setStep] = useState<'cart' | 'checkout'>('cart')
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('+380')
+  const [email, setEmail] = useState('')
   const [comment, setComment] = useState('')
   const [payment, setPayment] = useState<'cod' | 'card'>('cod')
   const [wantRegister, setWantRegister] = useState(false)
@@ -101,6 +102,7 @@ export default function CartDrawer() {
     if (phone.replace(/\D/g, '').length < 10) { setError('Вкажіть коректний номер телефону'); return }
     if (!city) { setError('Оберіть місто'); return }
     if (!warehouse) { setError('Оберіть відділення Нової Пошти'); return }
+    if (payment === 'card' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { setError('Вкажіть email — на нього надішлемо реквізити для оплати'); return }
     // Soft captcha: do not block order if token is missing (widget may be unavailable). Server verifies in soft mode.
 
     setSaving(true)
@@ -117,6 +119,7 @@ export default function CartDrawer() {
           customerPhone: phone.trim(),
           comment: comment.trim(),
           paymentMethod: payment,
+          customerEmail: email.trim(),
           npArea: area,
           npCity: city.name,
           npCityRef: city.ref,
@@ -197,7 +200,7 @@ export default function CartDrawer() {
             {sent ? (
               <div className="mt-6 rounded-xl bg-brand-soft/20 p-5 text-center">
                 <p className="text-lg font-semibold text-brand-dark">Дякуємо, {name || 'друже'}!</p>
-                <p className="mt-1 text-sm text-foreground/70">Ваше замовлення прийнято. Ми звʼяжемось з вами найближчим часом для підтвердження.</p>
+                <p className="mt-1 text-sm text-foreground/70">{payment === 'card' ? 'Замовлення прийнято! Реквізити для оплати надіслано на ваш email — оплатіть за ними, щоб підтвердити замовлення.' : 'Ваше замовлення прийнято. Ми звʼяжемось з вами найближчим часом для підтвердження.'}</p>
                 <a href="https://instagram.com/mini.mihandmade" target="_blank" rel="noreferrer" className="mt-4 inline-block rounded-lg bg-brand px-4 py-2 font-semibold text-white">Написати в Instagram</a>
                 <button type="button" onClick={() => { setSent(false); setStep('cart'); close(); }} className="mt-4 ml-2 inline-block rounded-lg border border-brand px-4 py-2 font-semibold text-brand hover:bg-brand-soft/30">Продовжити покупки</button>
               </div>
@@ -209,7 +212,8 @@ export default function CartDrawer() {
                   <div className="space-y-3">
                     <input value={name} onChange={(e) => setName(e.target.value)} required placeholder="Введіть ПІБ" className={fieldCls} />
                     <input value={phone} onChange={(e) => setPhone(e.target.value)} required placeholder="+380" className={fieldCls} />
-                    <input value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Коментар до замовлення" className={fieldCls} />
+                    <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required={payment === 'card'} placeholder={payment === 'card' ? 'Email (надішлемо реквізити для оплати)' : 'Email (необов’язково)'} className={fieldCls} />
+                  <input value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Коментар до замовлення" className={fieldCls} />
                   </div>
                 </section>
 
