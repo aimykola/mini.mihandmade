@@ -101,7 +101,7 @@ export default function CartDrawer() {
     if (phone.replace(/\D/g, '').length < 10) { setError('Вкажіть коректний номер телефону'); return }
     if (!city) { setError('Оберіть місто'); return }
     if (!warehouse) { setError('Оберіть відділення Нової Пошти'); return }
-    if (captchaRequired && !captchaToken) { setError('Підтвердьте, що ви не робот'); return }
+    // Soft captcha: do not block order if token is missing (widget may be unavailable). Server verifies in soft mode.
 
     setSaving(true)
     try {
