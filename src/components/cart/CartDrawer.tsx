@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useCart } from './CartContext'
 import { supabase } from '@/lib/supabase'
+import Turnstile from '@/components/Turnstile'
 
 type Area = { name: string }
 type City = { ref: string; name: string; present: string; area: string }
@@ -38,6 +39,8 @@ export default function CartDrawer() {
   const [sent, setSent] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [captchaToken, setCaptchaToken] = useState('')
+  const captchaRequired = !!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
   const cityBoxRef = useRef<HTMLDivElement>(null)
 
   // Load regions list once on checkout
@@ -98,6 +101,7 @@ export default function CartDrawer() {
     if (phone.replace(/\D/g, '').length < 10) { setError('Вкажіть коректний номер телефону'); return }
     if (!city) { setError('Оберіть місто'); return }
     if (!warehouse) { setError('Оберіть відділення Нової Пошти'); return }
+    if (captchaRequired && !captchaToken) { setError('Підтвердьте, що ви не робот'); return }
 
     setSaving(true)
     try {
@@ -118,6 +122,7 @@ export default function CartDrawer() {
           npCityRef: city.ref,
           npWarehouse: warehouse,
           items: orderItems,
+        captchaToken,
         }),
       })
       const data = await res.json()
@@ -265,6 +270,7 @@ export default function CartDrawer() {
                   Хочу зареєструватися
                 </label>
 
+                <Turnstile onVerify={setCaptchaToken} onExpire={() => setCaptchaToken('')} />
                 <div className="border-t border-brand-soft pt-3">
                   <div className="mb-3 flex justify-between text-lg font-bold"><span>Разом:</span><span>{total} грн</span></div>
                   {error && <p className="mb-2 text-sm text-red-600">{error}</p>}
