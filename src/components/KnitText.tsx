@@ -18,26 +18,34 @@ export default function KnitText({
   startDelay = 200,
 }: KnitTextProps) {
   const Tag = (as ?? 'span') as ElementType
-  const chars = Array.from(text)
+// Split into words so a word is never broken across lines.
+  // Each word is an inline-block (no internal break); words are separated
+  // by a normal breakable space, so wrapping only happens between words.
+  const words = text.split(' ')
+  let charIndex = 0
 
   return (
     <Tag className={className} aria-label={text}>
-      {chars.map((char, i) => {
-        if (char === ' ') {
+      {words.map((word, wi) => {
+        const letters = Array.from(word).map((char) => {
+          const delay = startDelay + charIndex * stagger
+          charIndex += 1
           return (
-            <span key={i} aria-hidden>
-              {'\u00A0'}
+            <span
+              key={charIndex}
+              aria-hidden
+              className="knit-letter inline-block"
+              style={{ animationDelay: delay + 'ms' }}
+            >
+              {char}
             </span>
           )
-        }
+        })
+        charIndex += 1 // account for the space between words
         return (
-          <span
-            key={i}
-            aria-hidden
-            className="knit-letter inline-block"
-            style={{ animationDelay: startDelay + i * stagger + 'ms' }}
-          >
-            {char}
+          <span key={wi}>
+            <span className="inline-block whitespace-nowrap">{letters}</span>
+            {wi < words.length - 1 ? ' ' : null}
           </span>
         )
       })}
