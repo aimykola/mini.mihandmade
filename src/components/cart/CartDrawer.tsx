@@ -199,6 +199,7 @@ export default function CartDrawer() {
                 <p className="text-lg font-semibold text-brand-dark">Дякуємо, {name || 'друже'}!</p>
                 <p className="mt-1 text-sm text-foreground/70">Ваше замовлення прийнято. Ми звʼяжемось з вами найближчим часом для підтвердження.</p>
                 <a href="https://instagram.com/mini.mihandmade" target="_blank" rel="noreferrer" className="mt-4 inline-block rounded-lg bg-brand px-4 py-2 font-semibold text-white">Написати в Instagram</a>
+                <button type="button" onClick={() => { setSent(false); setStep('cart'); close(); }} className="mt-4 ml-2 inline-block rounded-lg border border-brand px-4 py-2 font-semibold text-brand hover:bg-brand-soft/30">Продовжити покупки</button>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-6">
@@ -270,7 +271,6 @@ export default function CartDrawer() {
                   Хочу зареєструватися
                 </label>
 
-                <Turnstile onVerify={setCaptchaToken} onExpire={() => setCaptchaToken('')} />
                 <div className="border-t border-brand-soft pt-3">
                   <div className="mb-3 flex justify-between text-lg font-bold"><span>Разом:</span><span>{total} грн</span></div>
                   {error && <p className="mb-2 text-sm text-red-600">{error}</p>}
