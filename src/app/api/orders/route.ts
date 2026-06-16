@@ -208,14 +208,14 @@ export async function POST(req: NextRequest) {
   const ids = Array.from(qtyById.keys());
   const { data: dbProducts, error: prodErr } = await admin
     .from('products')
-    .select('id, name, price, discount, in_stock, active')
-    .in('id', ids);
+    .select('id, slug, name, price, discount, in_stock, active')
+    .in('slug', ids);
 
   if (prodErr) {
     return NextResponse.json({ error: prodErr.message }, { status: 500 });
   }
 
-  const byId = new Map((dbProducts ?? []).map((p) => [String(p.id), p]));
+  const byId = new Map((dbProducts ?? []).map((p) => [String(p.slug), p]));
 
   let total = 0;
   const items: OrderItem[] = [];
