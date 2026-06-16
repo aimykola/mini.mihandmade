@@ -113,7 +113,7 @@ async function notifyAdmin(order: {
 async function verifyCaptcha(token: string, ip: string): Promise<boolean> {
   const secret = process.env.TURNSTILE_SECRET_KEY;
   if (!secret) return true; // captcha not configured
-  if (!token) return false;
+  if (!token) return true; // soft mode: widget may be unavailable, don't block orders
   try {
     const form = new URLSearchParams();
     form.append('secret', secret);
@@ -126,7 +126,7 @@ async function verifyCaptcha(token: string, ip: string): Promise<boolean> {
     const data = (await res.json()) as { success?: boolean };
     return data.success === true;
   } catch {
-    return false;
+    return true; // soft mode: Cloudflare unreachable, don't block orders
   }
 }
 
