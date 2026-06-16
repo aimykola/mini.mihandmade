@@ -108,6 +108,28 @@ async function notifyAdmin(order: {
   }
 }
 
+// Verify a Cloudflare Turnstile captcha token. Soft mode: if no secret is
+// configured, verification is skipped so the form keeps working.
+async function verifyCaptcha(token: string, ip: string): Promise<boolean> {
+  const secret = process.env.TURNSTILE_SECRET_KEY;
+  if (!secret) return true; // captcha not configured
+  if (!token) return false;
+  try {
+    const form = new URLSearchParams();
+    form.append('secret', secret);
+    form.append('response', token);
+    if (ip && ip !== 'unknown') form.append('remoteip', ip);
+    const res = await fetch(
+      'https://challenges.cloudflare.com/turnstile/v0/siteverify',
+      { method: 'POST', body: form }
+    );
+    const data = (await res.json()) as { success?: boolean };
+    return data.success === true;
+  } catch {
+    return false;
+  }
+}
+
 export async function POST(req: NextRequest) {
   // --- Rate limit by client IP ---
   const ip =
@@ -126,6 +148,15 @@ export async function POST(req: NextRequest) {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: 'Невірний формат запиту' }, { status: 400 });
+  }
+
+  const captchaToken = String(body.captchaToken ?? '');
+  const captchaOk = await verifyCaptcha(captchaToken, ip);
+  if (!captchaOk) {
+    return NextResponse.json(
+      { error: 'Перевірка captcha не пройдена. Спробуйте ще раз.' },
+      { status: 400 }
+    );
   }
 
   const customerName = String(body.customerName ?? '').trim();
