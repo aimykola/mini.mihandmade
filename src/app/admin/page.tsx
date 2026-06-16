@@ -55,6 +55,7 @@ export default function AdminPage() {
 
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Record<string, unknown>[]>([]);
+  const [showArchived, setShowArchived] = useState(false);
   const [users, setUsers] = useState<UserRow[]>([]);
   const [form, setForm] = useState<typeof empty>(empty);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -89,6 +90,24 @@ export default function AdminPage() {
   const updateOrderStatus = useCallback(async (id: string, status: string) => {
     await supabase.from('orders').update({ status }).eq('id', id);
     setOrders((prev) => prev.map((o) => (String(o.id) === id ? { ...o, status } : o)));
+  }, []);
+
+  const archiveOrder = useCallback(async (id: string) => {
+    await supabase.from('orders').update({ status: 'archived' }).eq('id', id);
+    setOrders((prev) => prev.map((o) => (String(o.id) === id ? { ...o, status: 'archived' } : o)));
+  }, []);
+
+  const unarchiveOrder = useCallback(async (id: string) => {
+    await supabase.from('orders').update({ status: 'new' }).eq('id', id);
+    setOrders((prev) => prev.map((o) => (String(o.id) === id ? { ...o, status: 'new' } : o)));
+  }, []);
+
+  const deleteOrder = useCallback(async (id: string) => {
+    if (!confirm('Видалити це замовлення назавжди? Цю дію не можна скасувати.')) return;
+    const { error } = await supabase.from('orders').delete().eq('id', id);
+    if (error) { setMsg('Помилка: ' + error.message); return; }
+    setOrders((prev) => prev.filter((o) => String(o.id) !== id));
+    setMsg('Замовлення видалено ✓');
   }, []);
 
   const loadContacts = useCallback(async () => {
@@ -344,7 +363,15 @@ export default function AdminPage() {
         )}
         {tab === 'orders' && (
           <div className="overflow-x-auto rounded-2xl border border-[#f0e6da] bg-white">
-            {orders.length === 0 ? (
+            {(() => {
+              const visibleOrders = orders.filter((o) => (showArchived ? String(o.status) === 'archived' : String(o.status) !== 'archived'));
+              return (
+            <>
+            <div className="flex gap-2 p-3">
+              <button type="button" onClick={() => setShowArchived(false)} className={`rounded-lg px-3 py-1 text-xs font-semibold ${!showArchived ? 'bg-[#b5552e] text-white' : 'border border-[#e3d6c7] text-[#5a4636]'}`}>Активні</button>
+              <button type="button" onClick={() => setShowArchived(true)} className={`rounded-lg px-3 py-1 text-xs font-semibold ${showArchived ? 'bg-[#b5552e] text-white' : 'border border-[#e3d6c7] text-[#5a4636]'}`}>Архів</button>
+            </div>
+            {visibleOrders.length === 0 ? (
               <p className="p-6 text-center text-sm text-[#5a4636]">Замовлень поки немає</p>
             ) : (
               <table className="w-full text-left text-sm">
@@ -360,7 +387,7 @@ export default function AdminPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {orders.map((o) => (
+                  {visibleOrders.map((o) => (
                     <tr key={String(o.id)} className="border-b border-[#f0e6da] align-top">
                       <td className="p-3 whitespace-nowrap text-[#5a4636]">{o.created_at ? new Date(String(o.created_at)).toLocaleString('uk-UA', { dateStyle: 'short', timeStyle: 'short' }) : '—'}</td>
                       <td className="p-3">
@@ -375,13 +402,34 @@ export default function AdminPage() {
                       </td>
                       <td className="p-3 text-[#5a4636]">{o.payment_method === 'card' ? 'Картка' : 'При отриманні'}</td>
                       <td className="p-3 whitespace-nowrap font-semibold text-[#5a4636]">{String(o.total ?? 0)} грн</td>
-                      <td className="p-3"><span className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${(STATUS_MAP[String(o.status ?? 'new')] ?? STATUS_MAP.new).cls}`}>{(STATUS_MAP[String(o.status ?? 'new')] ?? STATUS_MAP.new).label}</span></td>
-                      <td className="p-3"><select value={String(o.status ?? 'new')} onChange={(e) => updateOrderStatus(String(o.id), e.target.value)} className="rounded-lg border border-[#e3d6c7] bg-white px-2 py-1 text-xs font-semibold text-[#5a4636] focus:border-[#e8a87c] focus:outline-none">{STATUS_FLOW.map((s) => (<option key={s.value} value={s.value}>{s.label}</option>))}</select></td>
+                      <td className="p-3">
+                          {String(o.status) === 'archived' ? (
+                            <span className="inline-block rounded-full bg-[#e3d6c7] px-3 py-1 text-xs font-semibold text-[#5a4636]">Архів</span>
+                          ) : (
+                            <span className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${(STATUS_MAP[String(o.status ?? 'new')] ?? STATUS_MAP.new).cls}`}>{(STATUS_MAP[String(o.status ?? 'new')] ?? STATUS_MAP.new).label}</span>
+                          )}
+                        </td>
+                        <td className="p-3">
+                          {String(o.status) === 'archived' ? (
+                            <div className="flex flex-col gap-1">
+                              <button type="button" onClick={() => unarchiveOrder(String(o.id))} className="rounded-lg border border-[#e3d6c7] px-2 py-1 text-xs font-semibold text-[#5a4636] hover:bg-[#f0e6da]">Повернути з архіву</button>
+                              <button type="button" onClick={() => deleteOrder(String(o.id))} className="rounded-lg bg-[#c0392b] px-2 py-1 text-xs font-semibold text-white hover:bg-[#a93226]">Видалити</button>
+                            </div>
+                          ) : (
+                            <div className="flex flex-col gap-1">
+                              <select value={String(o.status ?? 'new')} onChange={(e) => updateOrderStatus(String(o.id), e.target.value)} className="rounded-lg border border-[#e3d6c7] bg-white px-2 py-1 text-xs font-semibold text-[#5a4636] focus:border-[#e8a87c] focus:outline-none">{STATUS_FLOW.map((s) => (<option key={s.value} value={s.value}>{s.label}</option>))}</select>
+                              <button type="button" onClick={() => archiveOrder(String(o.id))} className="rounded-lg border border-[#e3d6c7] px-2 py-1 text-xs font-semibold text-[#5a4636] hover:bg-[#f0e6da]">В архів</button>
+                            </div>
+                          )}
+                        </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             )}
+            </>
+              );
+            })()}
           </div>
         )}
 
