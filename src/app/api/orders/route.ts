@@ -108,6 +108,54 @@ async function notifyAdmin(order: {
   }
 }
 
+async function notifyBuyer(order: {
+  orderId: string;
+  customerEmail: string;
+  customerName: string;
+  total: number;
+  items: OrderItem[];
+}) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey || !order.customerEmail) return; // not configured / no email
+  const from = process.env.ORDER_EMAIL_FROM || 'MINIMI handmade <onboarding@resend.dev>';
+  const requisites = process.env.PAYMENT_DETAILS || 'Реквізити для оплати надішле менеджер. Будь ласка, очікуйте на повідомлення.';
+  const itemsRows = order.items
+    .map(
+      (it) =>
+        `<tr><td style=\"padding:6px 10px;border-bottom:1px solid #f0e6da\">${esc(it.name)}</td><td style=\"padding:6px 10px;border-bottom:1px solid #f0e6da;text-align:center\">${it.qty}</td><td style=\"padding:6px 10px;border-bottom:1px solid #f0e6da;text-align:right\">${it.price} грн</td></tr>`
+    )
+    .join('');
+  const html = `
+<div style=\"font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#5a4636\">
+  <h2 style=\"color:#b5552e\">Дякуємо за замовлення №${order.orderId.slice(0, 8)}!</h2>
+  <p>Вітаємо, ${esc(order.customerName)}! Ваше замовлення прийнято. Для підтвердження, будь ласка, здійсніть передоплату за реквізитами нижче.</p>
+  <table style=\"border-collapse:collapse;width:100%;margin:12px 0\">
+    <thead><tr style=\"background:#fbeee2\"><th style=\"padding:6px 10px;text-align:left\">Товар</th><th style=\"padding:6px 10px\">К-сть</th><th style=\"padding:6px 10px;text-align:right\">Ціна</th></tr></thead>
+    <tbody>${itemsRows}</tbody>
+  </table>
+  <p style=\"font-size:18px\"><b>До сплати: ${order.total} грн</b></p>
+  <div style=\"background:#fbeee2;border-radius:10px;padding:14px 16px;margin:12px 0\">
+    <p style=\"margin:0 0 6px\"><b>Реквізити для оплати:</b></p>
+    <p style=\"margin:0;white-space:pre-wrap\">${esc(requisites)}</p>
+  </div>
+  <p style=\"font-size:13px;color:#8a7a6a\">Після оплати надішліть, будь ласка, підтвердження у Instagram @mini.mihandmade. Дякуємо!</p>
+</div>`;
+  try {
+    await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        from,
+        to: order.customerEmail,
+        subject: `Реквізити для оплати замовлення №${order.orderId.slice(0, 8)} — MINIMI handmade`,
+        html,
+      }),
+    });
+  } catch {
+    // best-effort - ignore email errors
+  }
+}
+
 // Verify a Cloudflare Turnstile captcha token. Soft mode: if no secret is
 // configured, verification is skipped so the form keeps working.
 async function verifyCaptcha(token: string, ip: string): Promise<boolean> {
@@ -163,6 +211,7 @@ export async function POST(req: NextRequest) {
   const customerPhone = String(body.customerPhone ?? '').trim();
   const comment = String(body.comment ?? '').trim().slice(0, 1000);
   const paymentMethod = body.paymentMethod === 'card' ? 'card' : 'cod';
+  const customerEmail = String(body.customerEmail ?? '').trim();
   const npArea = String(body.npArea ?? '').trim();
   const npCity = String(body.npCity ?? '').trim();
   const npCityRef = String(body.npCityRef ?? '').trim();
@@ -277,6 +326,11 @@ export async function POST(req: NextRequest) {
     paymentMethod,
     comment,
   });
+
+  // Send the buyer payment requisites for card prepayment (best-effort).
+  if (paymentMethod === 'card') {
+    await notifyBuyer({ orderId: String(data?.id ?? ''), customerEmail, customerName, total, items });
+  }
 
   return NextResponse.json({ ok: true, orderId: data?.id });
 }
