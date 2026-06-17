@@ -306,7 +306,7 @@ export default function AdminPage() {
               <h2 className="mb-4 text-lg font-bold text-[#5a4636]">Список товарів ({products.length})</h2>
               <ul className="divide-y divide-[#f0e6da]">
                 {products.map((p) => (
-                  <li key={p.id} className="flex items-center gap-4 py-3">
+                  <li key={p.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 py-3">
                     {p.image ? <img src={p.image} alt="" className="h-12 w-12 rounded-lg object-cover" /> : <div className="h-12 w-12 rounded-lg bg-[#fbeee2]" />}
                     <div className="flex-1">
                       <p className="font-semibold text-[#5a4636]">{p.name} {!p.active && <span className="text-xs text-gray-400">(приховано)</span>} <span className={`text-xs ${p.in_stock ? 'text-green-700' : 'text-[#b5552e]'}`}>{p.in_stock ? '• в наявності' : '• під замовлення'}</span></p>
