@@ -51,7 +51,7 @@ export default function AdminPage() {
   const router = useRouter();
   const [checking, setChecking] = useState(true);
   const [allowed, setAllowed] = useState(false);
-  const [tab, setTab] = useState<'products' | 'users' | 'orders' | 'contacts'>('products');
+  const [tab, setTab] = useState<'products' | 'users' | 'orders' | 'contacts'>(() => { if (typeof window === 'undefined') return 'products'; const s = localStorage.getItem('adminTab'); return (s === 'products' || s === 'users' || s === 'orders' || s === 'contacts') ? s : 'products'; });
 
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Record<string, unknown>[]>([]);
@@ -137,7 +137,7 @@ export default function AdminPage() {
     }
     init();
   }, [router, loadProducts, loadUsers, loadOrders, loadContacts]);
-  useEffect(() => { const t = localStorage.getItem('adminTab'); if (t === 'products' || t === 'users' || t === 'orders' || t === 'contacts') setTab(t); }, []);
+  useEffect(() => { }, []);
   useEffect(() => { try { localStorage.setItem('adminTab', tab); } catch {} }, [tab]);
 
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
