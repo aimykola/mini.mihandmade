@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import Image from 'next/image'
 import { products as fallbackProducts, type Product } from '@/lib/products'
 import { supabase } from '@/lib/supabase'
@@ -73,7 +74,7 @@ function ProductCard({ p, onAdd }: { p: Product; onAdd: (p: Product) => void }) 
           </>
         )}
       </div>
-      {full && (<div onClick={() => setFull(false)} className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"><button type="button" onClick={(e) => { e.stopPropagation(); setFull(false) }} aria-label="Закрити" className="absolute right-4 top-4 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-white/15 text-2xl font-bold text-white transition hover:bg-white/30">×</button><Image src={current} alt={p.name} width={1200} height={1200} className="max-h-[88vh] w-auto cursor-default object-contain" />{total > 1 && (<><button type="button" onClick={(e) => { e.stopPropagation(); prev() }} aria-label="Попереднє фото" className="absolute left-2 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-2xl font-bold text-white transition hover:bg-white/30">‹</button><button type="button" onClick={(e) => { e.stopPropagation(); next() }} aria-label="Наступне фото" className="absolute right-2 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-2xl font-bold text-white transition hover:bg-white/30">›</button></>)}</div>)}
+      {full && createPortal(<div onClick={() => setFull(false)} className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"><button type="button" onClick={(e) => { e.stopPropagation(); setFull(false) }} aria-label="Закрити" className="absolute right-4 top-4 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-white/15 text-2xl font-bold text-white transition hover:bg-white/30">×</button><Image src={current} alt={p.name} width={1200} height={1200} className="max-h-[88vh] w-auto cursor-default object-contain" />{total > 1 && (<><button type="button" onClick={(e) => { e.stopPropagation(); prev() }} aria-label="Попереднє фото" className="absolute left-2 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-2xl font-bold text-white transition hover:bg-white/30">‹</button><button type="button" onClick={(e) => { e.stopPropagation(); next() }} aria-label="Наступне фото" className="absolute right-2 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-2xl font-bold text-white transition hover:bg-white/30">›</button></>)}</div>, document.body)}
       <div className="flex flex-1 flex-col p-4">
         <h3 className="text-lg font-bold">{p.name}</h3>
         <span className={`mt-1 inline-flex w-fit rounded-full px-2 py-0.5 text-xs font-medium ${p.in_stock === false ? 'bg-[#fbeee2] text-[#b5552e]' : 'bg-[#f0e6da] text-[#9c8a78]'}`}>{p.in_stock === false ? 'В наявності' : 'Під замовлення'}</span>
