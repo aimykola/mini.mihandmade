@@ -156,7 +156,7 @@ export default function AdminPage() {
       const { data } = supabase.storage.from('product-images').getPublicUrl(path);
       uploaded.push(data.publicUrl);
     }
-    setForm((f) => ({ ...f, images: [...f.images, ...uploaded], image: f.image || uploaded[0] }));
+    setForm((f) => ({ ...f, images: [...f.images, ...uploaded], image: f.image || uploaded[0] })); e.target.value = '';
     setUploading(false);
     setMsg('');
   }
