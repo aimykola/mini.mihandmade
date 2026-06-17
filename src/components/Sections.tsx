@@ -16,7 +16,7 @@ export function Hero() {
           </div>
         </Reveal>
         <div className="flex aspect-square w-full items-center justify-center rounded-3xl bg-gradient-to-br from-brand-soft/40 to-accent-pink/40 p-6">
-          <Image src="/logo.png" alt="MINIMI Handmade" width={420} height={420} className="knit-in logo-breathe h-auto w-5/6 max-w-md object-contain" priority />
+          <Image src="/logo.png" alt="MINIMI Handmade" width={560} height={560} className="knit-in logo-breathe h-auto w-full max-w-xl object-contain" priority />
         </div>
       </div>
     </section>
