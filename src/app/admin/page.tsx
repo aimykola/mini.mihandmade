@@ -137,6 +137,8 @@ export default function AdminPage() {
     }
     init();
   }, [router, loadProducts, loadUsers, loadOrders, loadContacts]);
+  useEffect(() => { const t = localStorage.getItem('adminTab'); if (t === 'products' || t === 'users' || t === 'orders' || t === 'contacts') setTab(t); }, []);
+  useEffect(() => { try { localStorage.setItem('adminTab', tab); } catch {} }, [tab]);
 
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const files = e.target.files;
