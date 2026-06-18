@@ -17,6 +17,7 @@ type DbProduct = {
   images: string[] | null
   in_stock: boolean | null
   discount: number | null
+  sizes: string[] | null
 }
 
 function ProductCard({ p, onAdd }: { p: Product; onAdd: (p: Product) => void }) {
@@ -79,6 +80,14 @@ function ProductCard({ p, onAdd }: { p: Product; onAdd: (p: Product) => void }) 
         <h3 className="text-lg font-bold">{p.name}</h3>
         <span className={`mt-1 inline-flex w-fit rounded-full px-2 py-0.5 text-xs font-medium ${p.in_stock === false ? 'bg-[#fbeee2] text-[#b5552e]' : 'bg-[#f0e6da] text-[#9c8a78]'}`}>{p.in_stock === false ? 'В наявності' : 'Під замовлення'}</span>
         <p className="mt-1 flex-1 text-sm text-foreground/70">{p.description}</p>
+        {p.sizes && p.sizes.length > 0 && (
+          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+            <span className="text-xs font-medium text-foreground/50">Розміри:</span>
+            {p.sizes.map((s) => (
+              <span key={s} className="rounded-full bg-[#f0e6da] px-2 py-0.5 text-xs font-medium text-[#9c8a78]">{s}</span>
+            ))}
+          </div>
+        )}
         <div className="mt-4 flex items-center justify-between">
           {discount > 0 ? (
             <span className="flex items-baseline gap-2"><span className="text-sm text-foreground/40 line-through">{p.price} грн</span><span className="text-xl font-extrabold text-[#b5552e]">{Math.round(p.price * (1 - discount / 100))} грн</span></span>
@@ -127,7 +136,7 @@ export default function Catalog() {
     async function load() {
       const { data, error } = await supabase
         .from('products')
-        .select('slug, name, description, price, category, image, images, in_stock, discount')
+        .select('slug, name, description, price, category, image, images, sizes, in_stock, discount')
         .eq('active', true)
         .order('created_at', { ascending: true })
       if (!error && data && data.length > 0) {
@@ -141,6 +150,7 @@ export default function Catalog() {
           image: p.image ?? '/products/pled-1.jpg',
           images: (p.images && p.images.length > 0 ? p.images : (p.image ? [p.image] : [])),
           in_stock: p.in_stock ?? true,
+          sizes: p.sizes ?? [],
         }))
         setProducts(mapped)
       }
