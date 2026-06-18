@@ -20,13 +20,15 @@ type DbProduct = {
   sizes: string[] | null
 }
 
-function ProductCard({ p, onAdd }: { p: Product; onAdd: (p: Product) => void }) {
+function ProductCard({ p, onAdd }: { p: Product; onAdd: (p: Product, size?: string) => void }) {
   const gallery = p.images && p.images.length > 0 ? p.images : [p.image]
   const [index, setIndex] = useState(0)
   const [full, setFull] = useState(false)
   const total = gallery.length
   const current = gallery[Math.min(index, total - 1)]
   const discount = p.discount ?? 0
+  const hasSizes = !!(p.sizes && p.sizes.length > 0)
+  const [selectedSize, setSelectedSize] = useState<string | null>(null)
 
   function prev() {
     setIndex((i) => (i - 1 + total) % total)
@@ -80,12 +82,21 @@ function ProductCard({ p, onAdd }: { p: Product; onAdd: (p: Product) => void }) 
         <h3 className="text-lg font-bold">{p.name}</h3>
         <span className={`mt-1 inline-flex w-fit rounded-full px-2 py-0.5 text-xs font-medium ${p.in_stock === false ? 'bg-[#fbeee2] text-[#b5552e]' : 'bg-[#f0e6da] text-[#9c8a78]'}`}>{p.in_stock === false ? 'В наявності' : 'Під замовлення'}</span>
         <p className="mt-1 flex-1 text-sm text-foreground/70">{p.description}</p>
-        {p.sizes && p.sizes.length > 0 && (
-          <div className="mt-2 flex flex-wrap items-center gap-1.5">
-            <span className="text-xs font-medium text-foreground/50">Розміри:</span>
-            {p.sizes.map((s) => (
-              <span key={s} className="rounded-full bg-[#f0e6da] px-2 py-0.5 text-xs font-medium text-[#9c8a78]">{s}</span>
-            ))}
+        {hasSizes && (
+          <div className="mt-2">
+            <span className="text-xs font-medium text-foreground/50">Оберіть розмір:</span>
+            <div className="mt-1 flex flex-wrap gap-1.5">
+              {p.sizes!.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setSelectedSize(s)}
+                  className={`rounded-full border px-3 py-0.5 text-xs font-medium transition ${selectedSize === s ? 'border-brand bg-brand text-white' : 'border-brand-soft bg-[#f0e6da] text-[#9c8a78] hover:border-brand'}`}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
           </div>
         )}
         <div className="mt-4 flex items-center justify-between">
@@ -94,7 +105,12 @@ function ProductCard({ p, onAdd }: { p: Product; onAdd: (p: Product) => void }) 
           ) : (
             <span className="text-xl font-extrabold text-brand-dark">{p.price} грн</span>
           )}
-          <button onClick={() => onAdd(p)} className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-dark">В кошик</button>
+          <button
+            onClick={() => onAdd(p, selectedSize ?? undefined)}
+            disabled={hasSizes && !selectedSize}
+            title={hasSizes && !selectedSize ? 'Спочатку оберіть розмір' : undefined}
+            className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50"
+          >В кошик</button>
         </div>
       </div>
     </article>
