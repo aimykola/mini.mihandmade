@@ -108,7 +108,7 @@ export default function CartDrawer() {
     setSaving(true)
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      const orderItems = items.map((i) => ({ id: i.product.id, name: i.product.name, price: i.product.price, qty: i.qty }))
+      const orderItems = items.map((i) => ({ id: i.product.id, name: i.product.name, price: i.product.price, qty: i.qty, size: i.size }))
 
       const res = await fetch('/api/orders', {
         method: 'POST',
@@ -167,16 +167,17 @@ export default function CartDrawer() {
               ) : (
                 <ul className="space-y-4">
                   {items.map((i) => (
-                    <li key={i.product.id} className="flex gap-3 rounded-xl border border-brand-soft p-3">
+                    <li key={i.product.id + (i.size ? '__' + i.size : '')} className="flex gap-3 rounded-xl border border-brand-soft p-3">
                       <div className="h-16 w-16 flex-shrink-0 rounded-lg bg-brand-soft/30" />
                       <div className="flex-1">
                         <p className="font-semibold text-foreground">{i.product.name}</p>
+                        {i.size && <p className="text-xs font-medium text-brand-dark">Розмір: {i.size}</p>}
                         <p className="text-sm text-foreground/60">{i.product.price} грн</p>
                         <div className="mt-2 flex items-center gap-2">
-                          <button onClick={() => setQty(i.product.id, i.qty - 1)} className="h-7 w-7 rounded-full border border-brand-soft">−</button>
+                          <button onClick={() => setQty(i.product.id, i.qty - 1, i.size)} className="h-7 w-7 rounded-full border border-brand-soft">−</button>
                           <span className="w-6 text-center">{i.qty}</span>
-                          <button onClick={() => setQty(i.product.id, i.qty + 1)} className="h-7 w-7 rounded-full border border-brand-soft">+</button>
-                          <button onClick={() => remove(i.product.id)} className="ml-auto text-sm text-brand-dark hover:underline">Видалити</button>
+                          <button onClick={() => setQty(i.product.id, i.qty + 1, i.size)} className="h-7 w-7 rounded-full border border-brand-soft">+</button>
+                          <button onClick={() => remove(i.product.id, i.size)} className="ml-auto text-sm text-brand-dark hover:underline">Видалити</button>
                         </div>
                       </div>
                     </li>
