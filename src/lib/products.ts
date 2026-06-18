@@ -8,6 +8,7 @@ export type Product = {
   images?: string[]
   in_stock?: boolean
   discount?: number
+  sizes?: string[]
 }
 
             export const products: Product[] = [
