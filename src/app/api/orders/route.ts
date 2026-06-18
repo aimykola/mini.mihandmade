@@ -13,7 +13,7 @@ function getAdminClient() {
   });
 }
 
-type OrderItem = { id: string; name: string; price: number; qty: number };
+type OrderItem = { id: string; name: string; price: number; qty: number; size?: string };
 
 // --- Basic in-memory rate limiting (per IP). Best-effort: resets on cold start ---
 const RATE_LIMIT_MAX = 8; // max orders
@@ -66,7 +66,7 @@ async function notifyAdmin(order: {
   const itemsRows = order.items
     .map(
       (it) =>
-        `<tr><td style="padding:6px 10px;border-bottom:1px solid #f0e6da">${esc(it.name)}</td><td style="padding:6px 10px;border-bottom:1px solid #f0e6da;text-align:center">${it.qty}</td><td style="padding:6px 10px;border-bottom:1px solid #f0e6da;text-align:right">${it.price} грн</td></tr>`
+        `<tr><td style="padding:6px 10px;border-bottom:1px solid #f0e6da">${esc(it.name)}${it.size ? ` <span style="color:#9c8a78">(${esc(it.size)})</span>` : ''}</td><td style="padding:6px 10px;border-bottom:1px solid #f0e6da;text-align:center">${it.qty}</td><td style="padding:6px 10px;border-bottom:1px solid #f0e6da;text-align:right">${it.price} грн</td></tr>`
     )
     .join('');
 
@@ -122,7 +122,7 @@ async function notifyBuyer(order: {
   const itemsRows = order.items
     .map(
       (it) =>
-        `<tr><td style=\"padding:6px 10px;border-bottom:1px solid #f0e6da\">${esc(it.name)}</td><td style=\"padding:6px 10px;border-bottom:1px solid #f0e6da;text-align:center\">${it.qty}</td><td style=\"padding:6px 10px;border-bottom:1px solid #f0e6da;text-align:right\">${it.price} грн</td></tr>`
+        `<tr><td style=\"padding:6px 10px;border-bottom:1px solid #f0e6da\">${esc(it.name)}${it.size ? ` <span style=\"color:#9c8a78\">(${esc(it.size)})</span>` : ''}</td><td style=\"padding:6px 10px;border-bottom:1px solid #f0e6da;text-align:center\">${it.qty}</td><td style=\"padding:6px 10px;border-bottom:1px solid #f0e6da;text-align:right\">${it.price} грн</td></tr>`
     )
     .join('');
   const html = `
@@ -237,15 +237,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Забагато позицій' }, { status: 400 });
   }
 
-  // Normalise requested quantities by product id (ignore client price entirely).
-  const qtyById = new Map<string, number>();
+  // Normalise requested quantities by product id + chosen size (ignore client price entirely).
+  const lineMap = new Map<string, { id: string; size: string; qty: number }>();
   for (const it of rawItems) {
     const id = String(it?.id ?? '').trim();
     if (!id) {
       return NextResponse.json({ error: 'Невірний товар у кошику' }, { status: 400 });
     }
+    const size = String(it?.size ?? '').trim().slice(0, 60);
     const qty = Math.max(1, Math.min(99, Math.floor(Number(it?.qty) || 1)));
-    qtyById.set(id, (qtyById.get(id) ?? 0) + qty);
+    const key = id + '|' + size;
+    const existing = lineMap.get(key);
+    if (existing) existing.qty += qty;
+    else lineMap.set(key, { id, size, qty });
   }
 
   const admin = getAdminClient();
@@ -254,10 +258,10 @@ export async function POST(req: NextRequest) {
   }
 
   // --- Authoritative prices come from the DB, never from the client ---
-  const ids = Array.from(qtyById.keys());
+  const ids = Array.from(new Set(Array.from(lineMap.values()).map((l) => l.id)));
   const { data: dbProducts, error: prodErr } = await admin
     .from('products')
-    .select('id, slug, name, price, discount, in_stock, active')
+    .select('id, slug, name, price, discount, in_stock, active, sizes')
     .in('slug', ids);
 
   if (prodErr) {
@@ -268,7 +272,7 @@ export async function POST(req: NextRequest) {
 
   let total = 0;
   const items: OrderItem[] = [];
-  for (const [id, qty] of qtyById) {
+  for (const { id, size, qty } of lineMap.values()) {
     const p = byId.get(id);
     if (!p || p.active === false) {
       return NextResponse.json({ error: 'Товар недоступний' }, { status: 400 });
@@ -279,11 +283,18 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+    // Validate the chosen size against the product's allowed sizes (do not trust the client).
+    const allowedSizes: string[] = Array.isArray(p.sizes) ? p.sizes.map(String) : [];
+    if (allowedSizes.length > 0) {
+      if (!size || !allowedSizes.includes(size)) {
+        return NextResponse.json({ error: 'Оберіть коректний розмір товару' }, { status: 400 });
+      }
+    }
     const base = Number(p.price) || 0;
     const discount = Math.max(0, Math.min(95, Number(p.discount) || 0));
     const unit = Math.round(base * (1 - discount / 100));
     total += unit * qty;
-    items.push({ id, name: String(p.name), price: unit, qty });
+    items.push({ id, name: String(p.name), price: unit, qty, size: size || undefined });
   }
 
   if (total <= 0) {
