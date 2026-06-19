@@ -261,7 +261,7 @@ export async function POST(req: NextRequest) {
   const ids = Array.from(new Set(Array.from(lineMap.values()).map((l) => l.id)));
   const { data: dbProducts, error: prodErr } = await admin
     .from('products')
-    .select('id, slug, name, price, discount, in_stock, active, sizes')
+    .select('id, slug, name, price, discount, in_stock, active, sizes, size_options')
     .in('slug', ids);
 
   if (prodErr) {
@@ -283,14 +283,31 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-    // Validate the chosen size against the product's allowed sizes (do not trust the client).
-    const allowedSizes: string[] = Array.isArray(p.sizes) ? p.sizes.map(String) : [];
-    if (allowedSizes.length > 0) {
-      if (!size || !allowedSizes.includes(size)) {
+    // Determine the authoritative list of size options from the DB (label + price).
+    // Fall back to legacy "sizes" (string[]) priced at the base product price.
+    const rawOptions = Array.isArray(p.size_options) ? p.size_options : [];
+    const sizeOptions: { label: string; price: number }[] =
+      rawOptions.length > 0
+        ? rawOptions
+            .map((o: { label?: unknown; price?: unknown }) => ({
+              label: String(o?.label ?? '').trim(),
+              price: Number(o?.price) || 0,
+            }))
+            .filter((o) => o.label)
+        : (Array.isArray(p.sizes) ? p.sizes.map(String) : []).map((s: string) => ({
+            label: s,
+            price: Number(p.price) || 0,
+          }));
+
+    // The unit price comes from the chosen size option when sizes exist; never trust the client price.
+    let base = Number(p.price) || 0;
+    if (sizeOptions.length > 0) {
+      const chosen = sizeOptions.find((o) => o.label === size);
+      if (!size || !chosen) {
         return NextResponse.json({ error: 'Оберіть коректний розмір товару' }, { status: 400 });
       }
+      base = chosen.price;
     }
-    const base = Number(p.price) || 0;
     const discount = Math.max(0, Math.min(95, Number(p.discount) || 0));
     const unit = Math.round(base * (1 - discount / 100));
     total += unit * qty;
