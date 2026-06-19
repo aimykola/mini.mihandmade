@@ -44,7 +44,7 @@ function ProductCard({ p, onAdd }: { p: Product; onAdd: (p: Product, size?: stri
   const hasColors = colorOptions.length > 0
   const [selectedColor, setSelectedColor] = useState<string | null>(null)
   const selectedColorOption = colorOptions.find((o) => o.label === selectedColor) ?? null
-  const displayImage = (selectedColorOption && selectedColorOption.image) ? selectedColorOption.image : current
+  const [fullColor, setFullColor] = useState(false)
 
   function prev() {
     setIndex((i) => (i - 1 + total) % total)
@@ -56,7 +56,7 @@ function ProductCard({ p, onAdd }: { p: Product; onAdd: (p: Product, size?: stri
   return (
     <article className="group/card flex flex-col overflow-hidden rounded-2xl border border-black/10 bg-white shadow-sm transition duration-300 hover:-translate-y-1.5 hover:border-brand-soft/60 hover:shadow-xl">
       <div className="group relative aspect-square w-full bg-brand-soft/20">
-        <Image src={displayImage} alt={p.name} fill className="cursor-zoom-in object-cover transition-transform duration-500 ease-out group-hover/card:scale-105" sizes="(max-width: 768px) 100vw, 33vw" />
+        <Image src={current} alt={p.name} fill className="cursor-zoom-in object-cover transition-transform duration-500 ease-out group-hover/card:scale-105" sizes="(max-width: 768px) 100vw, 33vw" />
         <button type="button" onClick={() => setFull(true)} aria-label="Збільшити фото" className="absolute inset-0 z-[5] cursor-zoom-in" />
         {discount > 0 && (
           <span className="absolute right-3 top-3 z-10 rounded-full bg-brand px-3 py-1 text-sm font-semibold text-white shadow-md">−{discount}%</span>
@@ -93,7 +93,7 @@ function ProductCard({ p, onAdd }: { p: Product; onAdd: (p: Product, size?: stri
           </>
         )}
       </div>
-      {full && createPortal(<div onClick={() => setFull(false)} className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"><button type="button" onClick={(e) => { e.stopPropagation(); setFull(false) }} aria-label="Закрити" className="absolute right-4 top-4 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-white/15 text-2xl font-bold text-white transition hover:bg-white/30">×</button><Image src={displayImage} alt={p.name} width={1200} height={1200} className="max-h-[88vh] w-auto cursor-default object-contain" />{total > 1 && (<><button type="button" onClick={(e) => { e.stopPropagation(); prev() }} aria-label="Попереднє фото" className="absolute left-2 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-2xl font-bold text-white transition hover:bg-white/30">‹</button><button type="button" onClick={(e) => { e.stopPropagation(); next() }} aria-label="Наступне фото" className="absolute right-2 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-2xl font-bold text-white transition hover:bg-white/30">›</button></>)}</div>, document.body)}
+      {full && createPortal(<div onClick={() => setFull(false)} className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"><button type="button" onClick={(e) => { e.stopPropagation(); setFull(false) }} aria-label="Закрити" className="absolute right-4 top-4 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-white/15 text-2xl font-bold text-white transition hover:bg-white/30">×</button><Image src={current} alt={p.name} width={1200} height={1200} className="max-h-[88vh] w-auto cursor-default object-contain" />{total > 1 && (<><button type="button" onClick={(e) => { e.stopPropagation(); prev() }} aria-label="Попереднє фото" className="absolute left-2 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-2xl font-bold text-white transition hover:bg-white/30">‹</button><button type="button" onClick={(e) => { e.stopPropagation(); next() }} aria-label="Наступне фото" className="absolute right-2 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-2xl font-bold text-white transition hover:bg-white/30">›</button></>)}</div>, document.body)}
       <div className="flex flex-1 flex-col p-4">
         <h3 className="text-lg font-bold">{p.name}</h3>
         <span className={`mt-1 inline-flex w-fit rounded-full px-2 py-0.5 text-xs font-medium ${p.in_stock === false ? 'bg-[#fbeee2] text-[#b5552e]' : 'bg-[#f0e6da] text-[#9c8a78]'}`}>{p.in_stock === false ? 'В наявності' : 'Під замовлення'}</span>
@@ -132,7 +132,22 @@ function ProductCard({ p, onAdd }: { p: Product; onAdd: (p: Product, size?: stri
                 </button>
               ))}
             </div>
+            {selectedColorOption && selectedColorOption.image && (
+              <div className="mt-2">
+                <span className="text-xs font-medium text-foreground/50">Фото кольору «{selectedColorOption.label}»:</span>
+                <button type="button" onClick={() => setFullColor(true)} className="mt-1 block h-24 w-24 overflow-hidden rounded-lg border border-brand-soft">
+                  <img src={selectedColorOption.image} alt={selectedColorOption.label} className="h-full w-full cursor-zoom-in object-cover transition hover:scale-105" />
+                </button>
+              </div>
+            )}
           </div>
+        )}
+        {fullColor && selectedColorOption && selectedColorOption.image && createPortal(
+          <div onClick={() => setFullColor(false)} className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4">
+            <button type="button" onClick={(e) => { e.stopPropagation(); setFullColor(false) }} aria-label="Закрити" className="absolute right-4 top-4 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-white/15 text-2xl font-bold text-white transition hover:bg-white/30">×</button>
+            <Image src={selectedColorOption.image} alt={selectedColorOption.label} width={1200} height={1200} className="max-h-[88vh] w-auto cursor-default object-contain" onClick={(e) => e.stopPropagation()} />
+          </div>,
+          document.body
         )}
         <div className="mt-4 flex items-center justify-between">
           {discount > 0 ? (
