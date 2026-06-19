@@ -13,7 +13,7 @@ function getAdminClient() {
   });
 }
 
-type OrderItem = { id: string; name: string; price: number; qty: number; size?: string };
+type OrderItem = { id: string; name: string; price: number; qty: number; size?: string; color?: string };
 
 // --- Basic in-memory rate limiting (per IP). Best-effort: resets on cold start ---
 const RATE_LIMIT_MAX = 8; // max orders
@@ -66,7 +66,7 @@ async function notifyAdmin(order: {
   const itemsRows = order.items
     .map(
       (it) =>
-        `<tr><td style="padding:6px 10px;border-bottom:1px solid #f0e6da">${esc(it.name)}${it.size ? ` <span style="color:#9c8a78">(${esc(it.size)})</span>` : ''}</td><td style="padding:6px 10px;border-bottom:1px solid #f0e6da;text-align:center">${it.qty}</td><td style="padding:6px 10px;border-bottom:1px solid #f0e6da;text-align:right">${it.price} грн</td></tr>`
+        `<tr><td style="padding:6px 10px;border-bottom:1px solid #f0e6da">${esc(it.name)}${it.size ? ` <span style="color:#9c8a78">(${esc(it.size)})</span>` : ''}${it.color ? ` <span style="color:#9c8a78">[${esc(it.color)}]</span>` : ''}</td><td style="padding:6px 10px;border-bottom:1px solid #f0e6da;text-align:center">${it.qty}</td><td style="padding:6px 10px;border-bottom:1px solid #f0e6da;text-align:right">${it.price} грн</td></tr>`
     )
     .join('');
 
@@ -122,7 +122,7 @@ async function notifyBuyer(order: {
   const itemsRows = order.items
     .map(
       (it) =>
-        `<tr><td style=\"padding:6px 10px;border-bottom:1px solid #f0e6da\">${esc(it.name)}${it.size ? ` <span style=\"color:#9c8a78\">(${esc(it.size)})</span>` : ''}</td><td style=\"padding:6px 10px;border-bottom:1px solid #f0e6da;text-align:center\">${it.qty}</td><td style=\"padding:6px 10px;border-bottom:1px solid #f0e6da;text-align:right\">${it.price} грн</td></tr>`
+        `<tr><td style=\"padding:6px 10px;border-bottom:1px solid #f0e6da\">${esc(it.name)}${it.size ? ` <span style=\"color:#9c8a78\">(${esc(it.size)})</span>` : ''}${it.color ? ` <span style=\"color:#9c8a78\">[${esc(it.color)}]</span>` : ''}</td><td style=\"padding:6px 10px;border-bottom:1px solid #f0e6da;text-align:center\">${it.qty}</td><td style=\"padding:6px 10px;border-bottom:1px solid #f0e6da;text-align:right\">${it.price} грн</td></tr>`
     )
     .join('');
   const html = `
@@ -238,18 +238,19 @@ export async function POST(req: NextRequest) {
   }
 
   // Normalise requested quantities by product id + chosen size (ignore client price entirely).
-  const lineMap = new Map<string, { id: string; size: string; qty: number }>();
+  const lineMap = new Map<string, { id: string; size: string; color: string; qty: number }>();
   for (const it of rawItems) {
     const id = String(it?.id ?? '').trim();
     if (!id) {
       return NextResponse.json({ error: 'Невірний товар у кошику' }, { status: 400 });
     }
     const size = String(it?.size ?? '').trim().slice(0, 60);
+    const color = String(it?.color ?? '').trim().slice(0, 60);
     const qty = Math.max(1, Math.min(99, Math.floor(Number(it?.qty) || 1)));
-    const key = id + '|' + size;
+    const key = id + '|' + size + '|' + color;
     const existing = lineMap.get(key);
     if (existing) existing.qty += qty;
-    else lineMap.set(key, { id, size, qty });
+    else lineMap.set(key, { id, size, color, qty });
   }
 
   const admin = getAdminClient();
@@ -261,7 +262,7 @@ export async function POST(req: NextRequest) {
   const ids = Array.from(new Set(Array.from(lineMap.values()).map((l) => l.id)));
   const { data: dbProducts, error: prodErr } = await admin
     .from('products')
-    .select('id, slug, name, price, discount, in_stock, active, sizes, size_options')
+    .select('id, slug, name, price, discount, in_stock, active, sizes, size_options, colors')
     .in('slug', ids);
 
   if (prodErr) {
@@ -272,7 +273,7 @@ export async function POST(req: NextRequest) {
 
   let total = 0;
   const items: OrderItem[] = [];
-  for (const { id, size, qty } of lineMap.values()) {
+  for (const { id, size, color, qty } of lineMap.values()) {
     const p = byId.get(id);
     if (!p || p.active === false) {
       return NextResponse.json({ error: 'Товар недоступний' }, { status: 400 });
@@ -308,10 +309,17 @@ export async function POST(req: NextRequest) {
       }
       base = chosen.price;
     }
+    // Validate the chosen color against the product's available palette (when defined).
+    const productColors = Array.isArray(p.colors) ? p.colors.map(String) : [];
+    if (productColors.length > 0) {
+      if (!color || !productColors.includes(color)) {
+        return NextResponse.json({ error: 'Оберіть коректний колір товару' }, { status: 400 });
+      }
+    }
     const discount = Math.max(0, Math.min(95, Number(p.discount) || 0));
     const unit = Math.round(base * (1 - discount / 100));
     total += unit * qty;
-    items.push({ id, name: String(p.name), price: unit, qty, size: size || undefined });
+    items.push({ id, name: String(p.name), price: unit, qty, size: size || undefined, color: color || undefined });
   }
 
   if (total <= 0) {
