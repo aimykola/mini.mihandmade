@@ -1,3 +1,5 @@
+export type SizeOption = { label: string; price: number }
+
 export type Product = {
   id: string
   name: string
@@ -9,6 +11,7 @@ export type Product = {
   in_stock?: boolean
   discount?: number
   sizes?: string[]
+  sizeOptions?: SizeOption[]
 }
 
             export const products: Product[] = [
