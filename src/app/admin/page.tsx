@@ -16,6 +16,7 @@ type Product = {
   images: string[];
   sizes: string[];
   size_options: { label: string; price: number }[];
+  colors: string[];
   active: boolean;
   in_stock: boolean;
   discount: number;
@@ -30,7 +31,7 @@ type UserRow = {
   role: string | null;
 };
 
-const empty = { name: '', description: '', price: 0, category: 'pled', slug: '', image: '', images: [] as string[], sizeOptions: [] as { label: string; price: number }[], discount: 0 };
+const empty = { name: '', description: '', price: 0, category: 'pled', slug: '', image: '', images: [] as string[], sizeOptions: [] as { label: string; price: number }[], colors: [] as string[], discount: 0 };
 
 const STATUS_MAP: Record<string, { label: string; cls: string }> = {
   new: { label: 'В обробці', cls: 'bg-[#f0e6da] text-[#9c8a78]' },
@@ -63,6 +64,7 @@ export default function AdminPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [sizeInput, setSizeInput] = useState('');
   const [sizePriceInput, setSizePriceInput] = useState('');
+  const [colorInput, setColorInput] = useState('');
   const [msg, setMsg] = useState('');
   const [uploading, setUploading] = useState(false);
   const [contacts, setContacts] = useState({ contacts_heading: '', contacts_text: '', instagram_url: '', instagram_label: '', phone: '', email: '', viber_url: '', telegram_url: '' });
@@ -70,7 +72,7 @@ export default function AdminPage() {
   const loadProducts = useCallback(async () => {
     const { data } = await supabase
       .from('products')
-      .select('id, slug, name, description, price, category, image, images, sizes, size_options, active, in_stock, discount')
+      .select('id, slug, name, description, price, category, image, images, sizes, size_options, colors, active, in_stock, discount')
       .order('created_at', { ascending: true });
     setProducts((data as Product[]) ?? []);
   }, []);
@@ -181,6 +183,18 @@ export default function AdminPage() {
     setForm((f) => ({ ...f, sizeOptions: f.sizeOptions.filter((o) => o.label !== label) }));
   }
 
+  function addColor() {
+    const c = colorInput.trim();
+    if (!c) return;
+    if (form.colors.some((x) => x.toLowerCase() === c.toLowerCase())) { setColorInput(''); return; }
+    setForm((f) => ({ ...f, colors: [...f.colors, c] }));
+    setColorInput('');
+  }
+
+  function removeColor(c: string) {
+    setForm((f) => ({ ...f, colors: f.colors.filter((x) => x !== c) }));
+  }
+
   async function handleSaveProduct(e: React.FormEvent) {
     e.preventDefault();
     setMsg('');
@@ -195,6 +209,7 @@ export default function AdminPage() {
       images: form.images,
       sizes: form.sizeOptions.map((o) => o.label),
       size_options: form.sizeOptions,
+      colors: form.colors,
     };
     let error;
     if (editingId) {
@@ -211,7 +226,7 @@ export default function AdminPage() {
 
   function startEdit(p: Product) {
     setEditingId(p.id);
-    setForm({ name: p.name, description: p.description ?? '', price: p.price, category: p.category, slug: p.slug ?? '', image: p.image ?? '', images: p.images ?? [], sizeOptions: (p.size_options && p.size_options.length > 0 ? p.size_options : (p.sizes ?? []).map((s) => ({ label: s, price: p.price }))), discount: p.discount });
+    setForm({ name: p.name, description: p.description ?? '', price: p.price, category: p.category, slug: p.slug ?? '', image: p.image ?? '', images: p.images ?? [], sizeOptions: (p.size_options && p.size_options.length > 0 ? p.size_options : (p.sizes ?? []).map((s) => ({ label: s, price: p.price }))), colors: p.colors ?? [], discount: p.discount });
     setMsg('');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -346,6 +361,29 @@ export default function AdminPage() {
                       <span key={o.label} className="inline-flex items-center gap-1 rounded-full bg-[#f0e6da] px-3 py-1 text-sm text-[#5a4636]">
                         {o.label} — {o.price} ₴
                         <button type="button" onClick={() => removeSize(o.label)} className="flex h-4 w-4 items-center justify-center rounded-full bg-[#e23b2e] text-xs font-bold text-white">×</button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="mt-4">
+                <label className="mb-1 block text-xs font-medium text-[#9c8a78]">Палітра кольорів (можна декілька)</label>
+                <div className="flex flex-wrap gap-2">
+                  <input
+                    value={colorInput}
+                    onChange={(e) => setColorInput(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addColor(); } }}
+                    placeholder="Колір (напр. Бежевий, Сірий, #b5552e)"
+                    className="min-w-[180px] flex-1 rounded-lg border border-[#e8dccb] px-3 py-2 text-[#5a4636] outline-none focus:border-[#b5552e]"
+                  />
+                  <button type="button" onClick={addColor} className="rounded-lg bg-[#e8a87c] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#d8966a]">Додати колір</button>
+                </div>
+                {form.colors.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {form.colors.map((c) => (
+                      <span key={c} className="inline-flex items-center gap-1 rounded-full bg-[#f0e6da] px-3 py-1 text-sm text-[#5a4636]">
+                        {c}
+                        <button type="button" onClick={() => removeColor(c)} className="flex h-4 w-4 items-center justify-center rounded-full bg-[#e23b2e] text-xs font-bold text-white">×</button>
                       </span>
                     ))}
                   </div>
