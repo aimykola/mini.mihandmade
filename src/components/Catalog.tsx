@@ -113,7 +113,7 @@ function ProductCard({ p, onAdd }: { p: Product; onAdd: (p: Product, size?: stri
             <span className="text-xl font-extrabold text-brand-dark">{basePrice} грн</span>
           )}
           <button
-            onClick={() => onAdd({ ...p, price: basePrice }, selectedSize ?? undefined)}
+            onClick={() => onAdd({ ...p, price: Math.round(basePrice * (1 - discount / 100)) }, selectedSize ?? undefined)}
             disabled={hasSizes && !selectedSize}
             title={hasSizes && !selectedSize ? 'Спочатку оберіть розмір' : undefined}
             className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50"
