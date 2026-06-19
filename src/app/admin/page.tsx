@@ -17,6 +17,7 @@ type Product = {
   sizes: string[];
   size_options: { label: string; price: number }[];
   colors: string[];
+  color_options: { label: string; image: string }[];
   active: boolean;
   in_stock: boolean;
   discount: number;
@@ -31,7 +32,7 @@ type UserRow = {
   role: string | null;
 };
 
-const empty = { name: '', description: '', price: 0, category: 'pled', slug: '', image: '', images: [] as string[], sizeOptions: [] as { label: string; price: number }[], colors: [] as string[], discount: 0 };
+const empty = { name: '', description: '', price: 0, category: 'pled', slug: '', image: '', images: [] as string[], sizeOptions: [] as { label: string; price: number }[], colorOptions: [] as { label: string; image: string }[], discount: 0 };
 
 const STATUS_MAP: Record<string, { label: string; cls: string }> = {
   new: { label: 'В обробці', cls: 'bg-[#f0e6da] text-[#9c8a78]' },
@@ -65,6 +66,7 @@ export default function AdminPage() {
   const [sizeInput, setSizeInput] = useState('');
   const [sizePriceInput, setSizePriceInput] = useState('');
   const [colorInput, setColorInput] = useState('');
+  const [colorUploading, setColorUploading] = useState<string | null>(null);
   const [msg, setMsg] = useState('');
   const [uploading, setUploading] = useState(false);
   const [contacts, setContacts] = useState({ contacts_heading: '', contacts_text: '', instagram_url: '', instagram_label: '', phone: '', email: '', viber_url: '', telegram_url: '' });
@@ -72,7 +74,7 @@ export default function AdminPage() {
   const loadProducts = useCallback(async () => {
     const { data } = await supabase
       .from('products')
-      .select('id, slug, name, description, price, category, image, images, sizes, size_options, colors, active, in_stock, discount')
+      .select('id, slug, name, description, price, category, image, images, sizes, size_options, colors, color_options, active, in_stock, discount')
       .order('created_at', { ascending: true });
     setProducts((data as Product[]) ?? []);
   }, []);
@@ -186,13 +188,28 @@ export default function AdminPage() {
   function addColor() {
     const c = colorInput.trim();
     if (!c) return;
-    if (form.colors.some((x) => x.toLowerCase() === c.toLowerCase())) { setColorInput(''); return; }
-    setForm((f) => ({ ...f, colors: [...f.colors, c] }));
+    if (form.colorOptions.some((x) => x.label.toLowerCase() === c.toLowerCase())) { setColorInput(''); return; }
+    setForm((f) => ({ ...f, colorOptions: [...f.colorOptions, { label: c, image: '' }] }));
     setColorInput('');
   }
 
-  function removeColor(c: string) {
-    setForm((f) => ({ ...f, colors: f.colors.filter((x) => x !== c) }));
+  function removeColor(label: string) {
+    setForm((f) => ({ ...f, colorOptions: f.colorOptions.filter((x) => x.label !== label) }));
+  }
+
+  async function handleColorImageUpload(label: string, e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setColorUploading(label);
+    setMsg('');
+    const ext = file.name.split('.').pop();
+    const path = `color-${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+    const { error } = await supabase.storage.from('product-images').upload(path, file, { upsert: false });
+    if (error) { setMsg('Помилка завантаження зображення: ' + error.message); setColorUploading(null); e.target.value = ''; return; }
+    const { data } = supabase.storage.from('product-images').getPublicUrl(path);
+    setForm((f) => ({ ...f, colorOptions: f.colorOptions.map((o) => (o.label === label ? { ...o, image: data.publicUrl } : o)) }));
+    setColorUploading(null);
+    e.target.value = '';
   }
 
   async function handleSaveProduct(e: React.FormEvent) {
@@ -209,7 +226,8 @@ export default function AdminPage() {
       images: form.images,
       sizes: form.sizeOptions.map((o) => o.label),
       size_options: form.sizeOptions,
-      colors: form.colors,
+      colors: form.colorOptions.map((o) => o.label),
+      color_options: form.colorOptions,
     };
     let error;
     if (editingId) {
@@ -226,7 +244,7 @@ export default function AdminPage() {
 
   function startEdit(p: Product) {
     setEditingId(p.id);
-    setForm({ name: p.name, description: p.description ?? '', price: p.price, category: p.category, slug: p.slug ?? '', image: p.image ?? '', images: p.images ?? [], sizeOptions: (p.size_options && p.size_options.length > 0 ? p.size_options : (p.sizes ?? []).map((s) => ({ label: s, price: p.price }))), colors: p.colors ?? [], discount: p.discount });
+    setForm({ name: p.name, description: p.description ?? '', price: p.price, category: p.category, slug: p.slug ?? '', image: p.image ?? '', images: p.images ?? [], sizeOptions: (p.size_options && p.size_options.length > 0 ? p.size_options : (p.sizes ?? []).map((s) => ({ label: s, price: p.price }))), colorOptions: (p.color_options && p.color_options.length > 0 ? p.color_options : (p.colors ?? []).map((c) => ({ label: c, image: '' }))), discount: p.discount });
     setMsg('');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -378,13 +396,23 @@ export default function AdminPage() {
                   />
                   <button type="button" onClick={addColor} className="rounded-lg bg-[#e8a87c] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#d8966a]">Додати колір</button>
                 </div>
-                {form.colors.length > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {form.colors.map((c) => (
-                      <span key={c} className="inline-flex items-center gap-1 rounded-full bg-[#f0e6da] px-3 py-1 text-sm text-[#5a4636]">
-                        {c}
-                        <button type="button" onClick={() => removeColor(c)} className="flex h-4 w-4 items-center justify-center rounded-full bg-[#e23b2e] text-xs font-bold text-white">×</button>
-                      </span>
+                <p className="mt-1 text-xs text-[#9c8a78]">Для кожного кольору можна додати окреме фото палітри.</p>
+                {form.colorOptions.length > 0 && (
+                  <div className="mt-2 flex flex-col gap-2">
+                    {form.colorOptions.map((o) => (
+                      <div key={o.label} className="flex items-center gap-3 rounded-lg border border-[#e8dccb] bg-[#faf6f0] px-3 py-2">
+                        {o.image ? (
+                          <img src={o.image} alt={o.label} className="h-12 w-12 flex-shrink-0 rounded-md object-cover" />
+                        ) : (
+                          <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-md bg-[#f0e6da] text-[10px] text-[#9c8a78]">нема фото</div>
+                        )}
+                        <span className="flex-1 text-sm font-medium text-[#5a4636]">{o.label}</span>
+                        <label className="cursor-pointer rounded-lg bg-[#e8a87c] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[#d8966a]">
+                          {colorUploading === o.label ? 'Завантаження…' : (o.image ? 'Змінити фото' : 'Додати фото')}
+                          <input type="file" accept="image/*" className="hidden" disabled={colorUploading === o.label} onChange={(e) => handleColorImageUpload(o.label, e)} />
+                        </label>
+                        <button type="button" onClick={() => removeColor(o.label)} className="flex h-5 w-5 items-center justify-center rounded-full bg-[#e23b2e] text-xs font-bold text-white">×</button>
+                      </div>
                     ))}
                   </div>
                 )}
