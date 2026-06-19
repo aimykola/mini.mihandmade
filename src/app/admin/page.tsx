@@ -15,6 +15,7 @@ type Product = {
   image: string | null;
   images: string[];
   sizes: string[];
+  size_options: { label: string; price: number }[];
   active: boolean;
   in_stock: boolean;
   discount: number;
@@ -29,7 +30,7 @@ type UserRow = {
   role: string | null;
 };
 
-const empty = { name: '', description: '', price: 0, category: 'pled', slug: '', image: '', images: [] as string[], sizes: [] as string[], discount: 0 };
+const empty = { name: '', description: '', price: 0, category: 'pled', slug: '', image: '', images: [] as string[], sizeOptions: [] as { label: string; price: number }[], discount: 0 };
 
 const STATUS_MAP: Record<string, { label: string; cls: string }> = {
   new: { label: 'В обробці', cls: 'bg-[#f0e6da] text-[#9c8a78]' },
@@ -61,6 +62,7 @@ export default function AdminPage() {
   const [form, setForm] = useState<typeof empty>(empty);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [sizeInput, setSizeInput] = useState('');
+  const [sizePriceInput, setSizePriceInput] = useState('');
   const [msg, setMsg] = useState('');
   const [uploading, setUploading] = useState(false);
   const [contacts, setContacts] = useState({ contacts_heading: '', contacts_text: '', instagram_url: '', instagram_label: '', phone: '', email: '', viber_url: '', telegram_url: '' });
@@ -68,7 +70,7 @@ export default function AdminPage() {
   const loadProducts = useCallback(async () => {
     const { data } = await supabase
       .from('products')
-      .select('id, slug, name, description, price, category, image, images, sizes, active, in_stock, discount')
+      .select('id, slug, name, description, price, category, image, images, sizes, size_options, active, in_stock, discount')
       .order('created_at', { ascending: true });
     setProducts((data as Product[]) ?? []);
   }, []);
@@ -166,15 +168,17 @@ export default function AdminPage() {
   }
 
   function addSize() {
-    const v = sizeInput.trim();
-    if (!v) return;
-    if (form.sizes.includes(v)) { setSizeInput(''); return; }
-    setForm((f) => ({ ...f, sizes: [...f.sizes, v] }));
+    const label = sizeInput.trim();
+    if (!label) return;
+    if (form.sizeOptions.some((o) => o.label === label)) { setSizeInput(''); setSizePriceInput(''); return; }
+    const price = Number(sizePriceInput) || Number(form.price) || 0;
+    setForm((f) => ({ ...f, sizeOptions: [...f.sizeOptions, { label, price }] }));
     setSizeInput('');
+    setSizePriceInput('');
   }
 
-  function removeSize(s: string) {
-    setForm((f) => ({ ...f, sizes: f.sizes.filter((x) => x !== s) }));
+  function removeSize(label: string) {
+    setForm((f) => ({ ...f, sizeOptions: f.sizeOptions.filter((o) => o.label !== label) }));
   }
 
   async function handleSaveProduct(e: React.FormEvent) {
@@ -189,7 +193,8 @@ export default function AdminPage() {
       slug: form.slug || null,
       image: form.image || null,
       images: form.images,
-      sizes: form.sizes,
+      sizes: form.sizeOptions.map((o) => o.label),
+      size_options: form.sizeOptions,
     };
     let error;
     if (editingId) {
@@ -206,7 +211,7 @@ export default function AdminPage() {
 
   function startEdit(p: Product) {
     setEditingId(p.id);
-    setForm({ name: p.name, description: p.description ?? '', price: p.price, category: p.category, slug: p.slug ?? '', image: p.image ?? '', images: p.images ?? [], sizes: p.sizes ?? [], discount: p.discount });
+    setForm({ name: p.name, description: p.description ?? '', price: p.price, category: p.category, slug: p.slug ?? '', image: p.image ?? '', images: p.images ?? [], sizeOptions: (p.size_options && p.size_options.length > 0 ? p.size_options : (p.sizes ?? []).map((s) => ({ label: s, price: p.price }))), discount: p.discount });
     setMsg('');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -314,23 +319,33 @@ export default function AdminPage() {
                 </div>
               </div>
               <div className="mt-4">
-                <label className="mb-1 block text-xs font-medium text-[#9c8a78]">Розміри (можна декілька)</label>
-                <div className="flex gap-2">
+                <label className="mb-1 block text-xs font-medium text-[#9c8a78]">Розміри з цінами (можна декілька)</label>
+                <div className="flex flex-wrap gap-2">
                   <input
                     value={sizeInput}
                     onChange={(e) => setSizeInput(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSize(); } }}
-                    placeholder="Напр. S, M, L або 90x120 см"
-                    className="flex-1 rounded-lg border border-[#e8dccb] px-3 py-2 text-[#5a4636] outline-none focus:border-[#b5552e]"
+                    placeholder="Розмір (напр. S, M, L або 90x120 см)"
+                    className="min-w-[180px] flex-1 rounded-lg border border-[#e8dccb] px-3 py-2 text-[#5a4636] outline-none focus:border-[#b5552e]"
+                  />
+                  <input
+                    type="number"
+                    min={0}
+                    value={sizePriceInput}
+                    onChange={(e) => setSizePriceInput(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSize(); } }}
+                    placeholder="Ціна, ₴"
+                    className="w-28 rounded-lg border border-[#e8dccb] px-3 py-2 text-[#5a4636] outline-none focus:border-[#b5552e]"
                   />
                   <button type="button" onClick={addSize} className="rounded-lg bg-[#e8a87c] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#d8966a]">Додати розмір</button>
                 </div>
-                {form.sizes.length > 0 && (
+                <p className="mt-1 text-xs text-[#9c8a78]">Якщо ціну не вказати, береться основна ціна товару.</p>
+                {form.sizeOptions.length > 0 && (
                   <div className="mt-2 flex flex-wrap gap-2">
-                    {form.sizes.map((s) => (
-                      <span key={s} className="inline-flex items-center gap-1 rounded-full bg-[#f0e6da] px-3 py-1 text-sm text-[#5a4636]">
-                        {s}
-                        <button type="button" onClick={() => removeSize(s)} className="flex h-4 w-4 items-center justify-center rounded-full bg-[#e23b2e] text-xs font-bold text-white">×</button>
+                    {form.sizeOptions.map((o) => (
+                      <span key={o.label} className="inline-flex items-center gap-1 rounded-full bg-[#f0e6da] px-3 py-1 text-sm text-[#5a4636]">
+                        {o.label} — {o.price} ₴
+                        <button type="button" onClick={() => removeSize(o.label)} className="flex h-4 w-4 items-center justify-center rounded-full bg-[#e23b2e] text-xs font-bold text-white">×</button>
                       </span>
                     ))}
                   </div>
