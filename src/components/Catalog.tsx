@@ -18,6 +18,7 @@ type DbProduct = {
   in_stock: boolean | null
   discount: number | null
   sizes: string[] | null
+  size_options: { label: string; price: number }[] | null
 }
 
 function ProductCard({ p, onAdd }: { p: Product; onAdd: (p: Product, size?: string) => void }) {
@@ -27,8 +28,14 @@ function ProductCard({ p, onAdd }: { p: Product; onAdd: (p: Product, size?: stri
   const total = gallery.length
   const current = gallery[Math.min(index, total - 1)]
   const discount = p.discount ?? 0
-  const hasSizes = !!(p.sizes && p.sizes.length > 0)
+  // Prefer size options (label + own price); fall back to legacy string sizes at the base price.
+  const options = (p.sizeOptions && p.sizeOptions.length > 0)
+    ? p.sizeOptions
+    : (p.sizes ?? []).map((s) => ({ label: s, price: p.price }))
+  const hasSizes = options.length > 0
   const [selectedSize, setSelectedSize] = useState<string | null>(null)
+  const selectedOption = options.find((o) => o.label === selectedSize) ?? null
+  const basePrice = selectedOption ? selectedOption.price : p.price
 
   function prev() {
     setIndex((i) => (i - 1 + total) % total)
@@ -86,14 +93,14 @@ function ProductCard({ p, onAdd }: { p: Product; onAdd: (p: Product, size?: stri
           <div className="mt-2">
             <span className="text-xs font-medium text-foreground/50">Оберіть розмір:</span>
             <div className="mt-1 flex flex-wrap gap-1.5">
-              {p.sizes!.map((s) => (
+              {options.map((o) => (
                 <button
-                  key={s}
+                  key={o.label}
                   type="button"
-                  onClick={() => setSelectedSize(s)}
-                  className={`rounded-full border px-3 py-0.5 text-xs font-medium transition ${selectedSize === s ? 'border-brand bg-brand text-white' : 'border-brand-soft bg-[#f0e6da] text-[#9c8a78] hover:border-brand'}`}
+                  onClick={() => setSelectedSize(o.label)}
+                  className={`rounded-full border px-3 py-0.5 text-xs font-medium transition ${selectedSize === o.label ? 'border-brand bg-brand text-white' : 'border-brand-soft bg-[#f0e6da] text-[#9c8a78] hover:border-brand'}`}
                 >
-                  {s}
+                  {o.label}
                 </button>
               ))}
             </div>
@@ -101,12 +108,12 @@ function ProductCard({ p, onAdd }: { p: Product; onAdd: (p: Product, size?: stri
         )}
         <div className="mt-4 flex items-center justify-between">
           {discount > 0 ? (
-            <span className="flex items-baseline gap-2"><span className="text-sm text-foreground/40 line-through">{p.price} грн</span><span className="text-xl font-extrabold text-[#b5552e]">{Math.round(p.price * (1 - discount / 100))} грн</span></span>
+            <span className="flex items-baseline gap-2"><span className="text-sm text-foreground/40 line-through">{basePrice} грн</span><span className="text-xl font-extrabold text-[#b5552e]">{Math.round(basePrice * (1 - discount / 100))} грн</span></span>
           ) : (
-            <span className="text-xl font-extrabold text-brand-dark">{p.price} грн</span>
+            <span className="text-xl font-extrabold text-brand-dark">{basePrice} грн</span>
           )}
           <button
-            onClick={() => onAdd(p, selectedSize ?? undefined)}
+            onClick={() => onAdd({ ...p, price: basePrice }, selectedSize ?? undefined)}
             disabled={hasSizes && !selectedSize}
             title={hasSizes && !selectedSize ? 'Спочатку оберіть розмір' : undefined}
             className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50"
@@ -152,7 +159,7 @@ export default function Catalog() {
     async function load() {
       const { data, error } = await supabase
         .from('products')
-        .select('slug, name, description, price, category, image, images, sizes, in_stock, discount')
+        .select('slug, name, description, price, category, image, images, sizes, size_options, in_stock, discount')
         .eq('active', true)
         .order('created_at', { ascending: true })
       if (!error && data && data.length > 0) {
@@ -167,6 +174,7 @@ export default function Catalog() {
           images: (p.images && p.images.length > 0 ? p.images : (p.image ? [p.image] : [])),
           in_stock: p.in_stock ?? true,
           sizes: p.sizes ?? [],
+          sizeOptions: p.size_options ?? [],
         }))
         setProducts(mapped)
       }
