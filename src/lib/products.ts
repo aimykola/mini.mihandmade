@@ -12,6 +12,7 @@ export type Product = {
   discount?: number
   sizes?: string[]
   sizeOptions?: SizeOption[]
+  colors?: string[]
 }
 
             export const products: Product[] = [
