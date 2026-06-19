@@ -1,4 +1,5 @@
 export type SizeOption = { label: string; price: number }
+export type ColorOption = { label: string; image: string }
 
 export type Product = {
   id: string
@@ -13,6 +14,7 @@ export type Product = {
   sizes?: string[]
   sizeOptions?: SizeOption[]
   colors?: string[]
+  colorOptions?: ColorOption[]
 }
 
             export const products: Product[] = [
