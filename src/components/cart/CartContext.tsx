@@ -3,16 +3,16 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import type { Product } from '@/lib/products'
 
-export type CartItem = { product: Product; qty: number; size?: string }
+export type CartItem = { product: Product; qty: number; size?: string; color?: string }
 
 type CartContextType = {
   items: CartItem[]
   isOpen: boolean
   open: () => void
   close: () => void
-  add: (product: Product, size?: string) => void
-  remove: (id: string, size?: string) => void
-  setQty: (id: string, qty: number, size?: string) => void
+  add: (product: Product, size?: string, color?: string) => void
+  remove: (id: string, size?: string, color?: string) => void
+  setQty: (id: string, qty: number, size?: string, color?: string) => void
   clear: () => void
   count: number
   total: number
@@ -22,9 +22,9 @@ const CartContext = createContext<CartContextType | null>(null)
 
 const STORAGE_KEY = 'minimi_cart'
 
-// Two cart lines are the same only if both product id AND chosen size match.
-const sameLine = (i: CartItem, id: string, size?: string) =>
-  i.product.id === id && (i.size ?? '') === (size ?? '')
+// Two cart lines are the same only if product id AND chosen size AND chosen color all match.
+const sameLine = (i: CartItem, id: string, size?: string, color?: string) =>
+  i.product.id === id && (i.size ?? '') === (size ?? '') && (i.color ?? '') === (color ?? '')
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([])
@@ -43,22 +43,22 @@ export function CartProvider({ children }: { children: ReactNode }) {
     } catch {}
   }, [items])
 
-  const add = (product: Product, size?: string) => {
+  const add = (product: Product, size?: string, color?: string) => {
     setItems((prev) => {
-      const found = prev.find((i) => sameLine(i, product.id, size))
-      if (found) return prev.map((i) => (sameLine(i, product.id, size) ? { ...i, qty: i.qty + 1 } : i))
-      return [...prev, { product, qty: 1, size }]
+      const found = prev.find((i) => sameLine(i, product.id, size, color))
+      if (found) return prev.map((i) => (sameLine(i, product.id, size, color) ? { ...i, qty: i.qty + 1 } : i))
+      return [...prev, { product, qty: 1, size, color }]
     })
     setIsOpen(true)
   }
 
-  const remove = (id: string, size?: string) =>
-    setItems((prev) => prev.filter((i) => !sameLine(i, id, size)))
+  const remove = (id: string, size?: string, color?: string) =>
+    setItems((prev) => prev.filter((i) => !sameLine(i, id, size, color)))
 
-  const setQty = (id: string, qty: number, size?: string) =>
+  const setQty = (id: string, qty: number, size?: string, color?: string) =>
     setItems((prev) =>
       prev.flatMap((i) => {
-        if (!sameLine(i, id, size)) return [i]
+        if (!sameLine(i, id, size, color)) return [i]
         if (qty <= 0) return []
         return [{ ...i, qty }]
       })
