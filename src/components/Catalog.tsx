@@ -19,9 +19,10 @@ type DbProduct = {
   discount: number | null
   sizes: string[] | null
   size_options: { label: string; price: number }[] | null
+  colors: string[] | null
 }
 
-function ProductCard({ p, onAdd }: { p: Product; onAdd: (p: Product, size?: string) => void }) {
+function ProductCard({ p, onAdd }: { p: Product; onAdd: (p: Product, size?: string, color?: string) => void }) {
   const gallery = p.images && p.images.length > 0 ? p.images : [p.image]
   const [index, setIndex] = useState(0)
   const [full, setFull] = useState(false)
@@ -36,6 +37,9 @@ function ProductCard({ p, onAdd }: { p: Product; onAdd: (p: Product, size?: stri
   const [selectedSize, setSelectedSize] = useState<string | null>(null)
   const selectedOption = options.find((o) => o.label === selectedSize) ?? null
   const basePrice = selectedOption ? selectedOption.price : p.price
+  const colors = p.colors ?? []
+  const hasColors = colors.length > 0
+  const [selectedColor, setSelectedColor] = useState<string | null>(null)
 
   function prev() {
     setIndex((i) => (i - 1 + total) % total)
@@ -106,6 +110,23 @@ function ProductCard({ p, onAdd }: { p: Product; onAdd: (p: Product, size?: stri
             </div>
           </div>
         )}
+        {hasColors && (
+          <div className="mt-2">
+            <span className="text-xs font-medium text-foreground/50">Оберіть колір:</span>
+            <div className="mt-1 flex flex-wrap gap-1.5">
+              {colors.map((col) => (
+                <button
+                  key={col}
+                  type="button"
+                  onClick={() => setSelectedColor(col)}
+                  className={`rounded-full border px-3 py-0.5 text-xs font-medium transition ${selectedColor === col ? 'border-brand bg-brand text-white' : 'border-brand-soft bg-[#f0e6da] text-[#9c8a78] hover:border-brand'}`}
+                >
+                  {col}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         <div className="mt-4 flex items-center justify-between">
           {discount > 0 ? (
             <span className="flex items-baseline gap-2"><span className="text-sm text-foreground/40 line-through">{basePrice} грн</span><span className="text-xl font-extrabold text-[#b5552e]">{Math.round(basePrice * (1 - discount / 100))} грн</span></span>
@@ -113,9 +134,9 @@ function ProductCard({ p, onAdd }: { p: Product; onAdd: (p: Product, size?: stri
             <span className="text-xl font-extrabold text-brand-dark">{basePrice} грн</span>
           )}
           <button
-            onClick={() => onAdd({ ...p, price: Math.round(basePrice * (1 - discount / 100)) }, selectedSize ?? undefined)}
-            disabled={hasSizes && !selectedSize}
-            title={hasSizes && !selectedSize ? 'Спочатку оберіть розмір' : undefined}
+            onClick={() => onAdd({ ...p, price: Math.round(basePrice * (1 - discount / 100)) }, selectedSize ?? undefined, selectedColor ?? undefined)}
+            disabled={(hasSizes && !selectedSize) || (hasColors && !selectedColor)}
+            title={(hasSizes && !selectedSize) ? 'Спочатку оберіть розмір' : ((hasColors && !selectedColor) ? 'Спочатку оберіть колір' : undefined)}
             className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50"
           >В кошик</button>
         </div>
@@ -159,7 +180,7 @@ export default function Catalog() {
     async function load() {
       const { data, error } = await supabase
         .from('products')
-        .select('slug, name, description, price, category, image, images, sizes, size_options, in_stock, discount')
+        .select('slug, name, description, price, category, image, images, sizes, size_options, colors, in_stock, discount')
         .eq('active', true)
         .order('created_at', { ascending: true })
       if (!error && data && data.length > 0) {
@@ -175,6 +196,7 @@ export default function Catalog() {
           in_stock: p.in_stock ?? true,
           sizes: p.sizes ?? [],
           sizeOptions: p.size_options ?? [],
+          colors: p.colors ?? [],
         }))
         setProducts(mapped)
       }
